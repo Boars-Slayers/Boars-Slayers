@@ -3,12 +3,14 @@ import { supabase } from '../lib/supabase';
 import { LogIn, LogOut, User, Settings } from 'lucide-react';
 import { UserProfile } from '../lib/supabase';
 import { AdminPanel } from './AdminPanel';
+import { ProfileEditor } from './ProfileEditor';
 
 export const AuthStatus: React.FC = () => {
     const [user, setUser] = useState<any>(null);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     useEffect(() => {
         // Check active session
@@ -40,6 +42,9 @@ export const AuthStatus: React.FC = () => {
     const handleLogin = async () => {
         await supabase.auth.signInWithOAuth({
             provider: 'discord',
+            options: {
+                redirectTo: window.location.origin
+            }
         });
     };
 
@@ -80,7 +85,10 @@ export const AuthStatus: React.FC = () => {
                     {/* Dropdown Menu */}
                     <div className="absolute right-0 mt-2 w-48 bg-stone-900 border border-gold-700/30 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
                         <div className="p-2 space-y-1">
-                            <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gold-600/20 hover:text-gold-400 rounded transition-colors text-left">
+                            <button
+                                onClick={() => setIsProfileOpen(true)}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gold-600/20 hover:text-gold-400 rounded transition-colors text-left"
+                            >
                                 <User size={16} /> Ver Perfil
                             </button>
                             {profile?.role === 'admin' && (
@@ -105,6 +113,14 @@ export const AuthStatus: React.FC = () => {
 
             {isAdminPanelOpen && (
                 <AdminPanel onClose={() => setIsAdminPanelOpen(false)} />
+            )}
+
+            {isProfileOpen && profile && (
+                <ProfileEditor
+                    profile={profile}
+                    onClose={() => setIsProfileOpen(false)}
+                    onUpdate={() => user && fetchProfile(user.id)}
+                />
             )}
         </>
     );

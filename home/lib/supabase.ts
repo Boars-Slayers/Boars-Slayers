@@ -17,5 +17,7 @@ export interface UserProfile {
     avatar_url: string;
     steam_id: string;
     role: UserRole;
+    bio?: string;
+    favorite_civ?: string;
     created_at: string;
 }
