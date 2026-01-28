@@ -1,0 +1,5 @@
+{
+  "name": "Copy of AoE2 Stochastic Build Optimizer",
+  "description": "An advanced architectural simulation engine for generating optimized Age of Empires II build orders based on microeconomic friction and stochastic variables.",
+  "requestFramePermissions": []
+}

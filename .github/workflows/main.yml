@@ -1,0 +1,48 @@
+name: Deploy to BanaHosting & Supabase
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # Job 1: Build and Deploy Frontend (home)
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install and Build (Home)
+        working-directory: ./home
+        run: |
+          npm install
+          npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./home/dist/
+          server-dir: /public_html/ # Cambia esto a la carpeta de tu dominio en BanaHosting
+
+  # Job 2: Sync Supabase Database
+  sync-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Link and Push Migrations
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      
+      - run: |
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} -p ${{ secrets.SUPABASE_DB_PASSWORD }}
+          supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
