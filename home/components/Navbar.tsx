@@ -3,10 +3,13 @@ import { Logo } from './Logo';
 import { NAV_ITEMS } from '../constants';
 import { AuthStatus } from './AuthStatus';
 import { Menu, X } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -14,19 +17,28 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    e.preventDefault();
+  const handleNavClick = async (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('#')) {
+      e.preventDefault();
+
+      if (location.pathname !== '/') {
+        await navigate('/');
+        // Give time for home page to mount
+        setTimeout(() => scrollToElement(href), 100);
+      } else {
+        scrollToElement(href);
+      }
+      setIsMobileMenuOpen(false);
+    }
+  };
+
+  const scrollToElement = (href: string) => {
     const element = document.querySelector(href);
     if (element) {
-      const headerOffset = 80; // Ajuste para el header fijo
+      const headerOffset = 80;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
-      setIsMobileMenuOpen(false);
+      window.scrollTo({ top: offsetPosition, behavior: "smooth" });
     }
   };
 

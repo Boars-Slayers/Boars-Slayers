@@ -19,5 +19,8 @@ export interface UserProfile {
     role: UserRole;
     bio?: string;
     favorite_civ?: string;
+    aoe_insights_url?: string;
+    reason?: string;
+    accepted_rules?: boolean;
     created_at: string;
 }

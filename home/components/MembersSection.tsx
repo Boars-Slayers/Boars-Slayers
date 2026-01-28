@@ -1,11 +1,35 @@
-import React, { useState } from 'react';
-import { CLAN_MEMBERS } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { supabase, UserProfile } from '../lib/supabase';
 import { MemberCard } from './MemberCard';
 import { MemberModal } from './MemberModal';
-import { Member } from '../types';
+import { Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const MembersSection: React.FC = () => {
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [members, setMembers] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMember, setSelectedMember] = useState<UserProfile | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .neq('role', 'candidate')
+        .order('role', { ascending: true }); // Admin first (A-Z)
+
+      if (data) setMembers(data);
+      setLoading(false);
+    };
+    fetchMembers();
+  }, []);
+
+  const handleMemberClick = (m: UserProfile) => {
+    // Optionally open modal or just navigate
+    // Let's open modal for quick view as before, but the modal will have a "Ver Perfil Completo" button
+    setSelectedMember(m);
+  };
 
   return (
     <section id="members" className="py-24 bg-stone-900 relative">
@@ -23,21 +47,48 @@ export const MembersSection: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-          {CLAN_MEMBERS.map((member) => (
-            <MemberCard
-              key={member.id}
-              member={member}
-              onClick={(m) => setSelectedMember(m)}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex flex-col items-center py-20">
+            <Loader2 size={40} className="text-gold-500 animate-spin opacity-20" />
+            <p className="text-stone-500 mt-4 font-serif italic text-sm">Reuniendo al ejército...</p>
+          </div>
+        ) : members.length === 0 ? (
+          <div className="text-center py-20 border-2 border-dashed border-stone-800 rounded-2xl">
+            <p className="text-stone-500 font-serif italic">Aún no hay guerreros registrados bajo este estandarte...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+            {members.map((m) => (
+              <MemberCard
+                key={m.id}
+                member={{
+                  id: m.id,
+                  name: m.username,
+                  role: m.role === 'admin' ? 'Leader' : 'Member',
+                  avatarUrl: m.avatar_url,
+                  favoriteCiv: m.favorite_civ
+                }}
+                onClick={() => handleMemberClick(m)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Member Modal Integration */}
       {selectedMember && (
         <MemberModal
-          member={selectedMember}
+          member={{
+            id: selectedMember.id,
+            name: selectedMember.username,
+            role: selectedMember.role === 'admin' ? 'Leader' : 'Member',
+            avatarUrl: selectedMember.avatar_url,
+            favoriteCiv: selectedMember.favorite_civ
+          }}
+          onViewProfile={() => {
+            navigate(`/user/${selectedMember.username}`);
+            setSelectedMember(null);
+          }}
           onClose={() => setSelectedMember(null)}
         />
       )}

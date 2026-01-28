@@ -1,63 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import React, { useState } from 'react';
 import { LogIn, LogOut, User, Settings } from 'lucide-react';
-import { UserProfile } from '../lib/supabase';
 import { AdminPanel } from './AdminPanel';
 import { ProfileEditor } from './ProfileEditor';
+import { useAuth } from '../AuthContext';
 
 export const AuthStatus: React.FC = () => {
-    const [user, setUser] = useState<any>(null);
-    const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { user, profile, loading, login, logout, refreshProfile } = useAuth();
     const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-    useEffect(() => {
-        // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            if (session?.user) fetchProfile(session.user.id);
-            setLoading(false);
-        });
-
-        // Listen for changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
-            if (session?.user) fetchProfile(session.user.id);
-            else setProfile(null);
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
-
-    const fetchProfile = async (userId: string) => {
-        const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-        setProfile(data);
-    };
-
-    const handleLogin = async () => {
-        await supabase.auth.signInWithOAuth({
-            provider: 'discord',
-            options: {
-                redirectTo: window.location.origin
-            }
-        });
-    };
-
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-    };
 
     if (loading) return <div className="text-gold-500 text-sm">Cargando...</div>;
 
     if (!user) {
         return (
             <button
-                onClick={handleLogin}
+                onClick={login}
                 className="flex items-center gap-2 px-4 py-2 bg-[#5865F2] hover:bg-[#4752c4] text-white rounded-lg font-bold transition-all shadow-lg hover:shadow-indigo-500/30"
             >
                 <LogIn size={18} />
@@ -101,7 +58,7 @@ export const AuthStatus: React.FC = () => {
                             )}
                             <div className="h-px bg-stone-800 my-1"></div>
                             <button
-                                onClick={handleLogout}
+                                onClick={logout}
                                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-400 hover:bg-red-900/20 rounded transition-colors text-left"
                             >
                                 <LogOut size={16} /> Cerrar Sesión
@@ -119,7 +76,7 @@ export const AuthStatus: React.FC = () => {
                 <ProfileEditor
                     profile={profile}
                     onClose={() => setIsProfileOpen(false)}
-                    onUpdate={() => user && fetchProfile(user.id)}
+                    onUpdate={refreshProfile}
                 />
             )}
         </>

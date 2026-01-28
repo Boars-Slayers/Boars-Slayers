@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
-import { UserCheck, UserX, Shield, Clock, RefreshCw } from 'lucide-react';
+import { UserCheck, UserX, Shield, Clock, RefreshCw, ExternalLink } from 'lucide-react';
 
 interface AdminPanelProps {
     onClose: () => void;
@@ -98,40 +98,70 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                             {candidates.map((candidate) => (
                                 <div
                                     key={candidate.id}
-                                    className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white/5 border border-white/5 rounded-xl hover:border-gold-600/30 transition-all group"
+                                    className="flex flex-col p-4 bg-white/5 border border-white/5 rounded-xl hover:border-gold-600/30 transition-all group"
                                 >
-                                    <div className="flex items-center gap-4 mb-4 sm:mb-0">
-                                        <div className="relative">
-                                            <img
-                                                src={candidate.avatar_url}
-                                                alt={candidate.username}
-                                                className="w-14 h-14 rounded-full border-2 border-stone-700 group-hover:border-gold-600 transition-colors"
-                                            />
-                                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gray-500 rounded-full border-2 border-stone-900" title="Candidate status"></div>
+                                    <div className="flex flex-col sm:flex-row items-center justify-between mb-4">
+                                        <div className="flex items-center gap-4 mb-4 sm:mb-0">
+                                            <div className="relative">
+                                                <img
+                                                    src={candidate.avatar_url}
+                                                    alt={candidate.username}
+                                                    className="w-14 h-14 rounded-full border-2 border-stone-700 group-hover:border-gold-600 transition-colors"
+                                                />
+                                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gray-500 rounded-full border-2 border-stone-900" title="Candidate status"></div>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-white text-lg">{candidate.username}</h4>
+                                                <p className="text-xs font-mono text-stone-500">{candidate.id.split('-')[0]}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="font-bold text-white text-lg">{candidate.username}</h4>
-                                            <p className="text-xs font-mono text-stone-500">{candidate.id.split('-')[0]}</p>
+
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                disabled={actioningId === candidate.id}
+                                                onClick={() => handleReject(candidate.id)}
+                                                className="flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors border border-transparent hover:border-red-400/30 text-sm font-bold uppercase tracking-wider disabled:opacity-50"
+                                            >
+                                                <UserX size={18} />
+                                                Rechazar
+                                            </button>
+                                            <button
+                                                disabled={actioningId === candidate.id}
+                                                onClick={() => handleApprove(candidate.id)}
+                                                className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all shadow-lg shadow-emerald-900/20 text-sm font-bold uppercase tracking-wider disabled:opacity-50"
+                                            >
+                                                <UserCheck size={18} />
+                                                Aprobar
+                                            </button>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            disabled={actioningId === candidate.id}
-                                            onClick={() => handleReject(candidate.id)}
-                                            className="flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors border border-transparent hover:border-red-400/30 text-sm font-bold uppercase tracking-wider disabled:opacity-50"
-                                        >
-                                            <UserX size={18} />
-                                            Rechazar
-                                        </button>
-                                        <button
-                                            disabled={actioningId === candidate.id}
-                                            onClick={() => handleApprove(candidate.id)}
-                                            className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all shadow-lg shadow-emerald-900/20 text-sm font-bold uppercase tracking-wider disabled:opacity-50"
-                                        >
-                                            <UserCheck size={18} />
-                                            Aprobar Miembro
-                                        </button>
+                                    {/* Recruitment Details */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 p-4 bg-black/40 rounded-lg border border-white/5">
+                                        <div className="space-y-2">
+                                            <p className="text-[10px] text-gold-500 uppercase tracking-widest font-bold">Identidad de Batalla</p>
+                                            <div className="flex flex-wrap gap-2 text-xs">
+                                                <span className="px-2 py-1 bg-stone-800 rounded border border-stone-700 text-stone-300">
+                                                    Steam: {candidate.steam_id || 'N/A'}
+                                                </span>
+                                                {candidate.aoe_insights_url && (
+                                                    <a
+                                                        href={candidate.aoe_insights_url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="px-2 py-1 bg-stone-800 rounded border border-stone-700 text-gold-400 hover:border-gold-500 flex items-center gap-1 transition-colors"
+                                                    >
+                                                        AOE Insights <ExternalLink size={10} />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-[10px] text-gold-500 uppercase tracking-widest font-bold">Por qué quiere unirse</p>
+                                            <p className="text-xs text-stone-300 italic leading-relaxed">
+                                                "{candidate.reason || 'No proporcionado'}"
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             ))}

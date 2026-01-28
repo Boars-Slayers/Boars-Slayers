@@ -1,0 +1,148 @@
+import React, { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { supabase, UserProfile } from '../lib/supabase';
+import { ExternalLink, MessageSquare, ArrowLeft, Loader2, Award, Swords, TrendingUp } from 'lucide-react';
+import { Navbar } from './Navbar';
+import { Footer } from './Footer';
+
+export const ProfilePage: React.FC = () => {
+    const { username } = useParams<{ username: string }>();
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('username', username)
+                .single();
+
+            if (!error) setProfile(data);
+            setLoading(false);
+        };
+        if (username) fetchProfile();
+    }, [username]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-stone-950 flex items-center justify-center">
+                <Loader2 size={48} className="text-gold-500 animate-spin" />
+            </div>
+        );
+    }
+
+    if (!profile) {
+        return (
+            <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center text-center px-6">
+                <h1 className="text-4xl font-serif font-bold text-white mb-4">Guerrero No Encontrado</h1>
+                <p className="text-stone-400 mb-8 text-lg">Este combatiente aún no ha sido reclutado o su nombre ha sido borrado de las crónicas.</p>
+                <Link to="/" className="text-gold-500 hover:text-gold-400 flex items-center gap-2 font-bold uppercase tracking-widest text-sm bg-gold-900/20 px-6 py-3 rounded-lg border border-gold-600/30">
+                    <ArrowLeft size={16} /> Volver al Campamento
+                </Link>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-stone-950 text-gray-200">
+            <Navbar />
+            <div className="relative h-64 md:h-80 w-full overflow-hidden">
+                <div className="absolute inset-0 bg-stone-900">
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-stone-950"></div>
+                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)', backgroundSize: '50px 50px' }}></div>
+                </div>
+                <div className="relative max-w-7xl mx-auto px-6 h-full flex items-end pb-8">
+                    <div className="flex flex-col md:flex-row items-center md:items-end gap-6 w-full">
+                        <div className="relative group">
+                            <img
+                                src={profile.avatar_url}
+                                alt={profile.username}
+                                className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-stone-950 shadow-2xl relative z-10 bg-stone-800 object-cover"
+                            />
+                            <div className="absolute inset-0 rounded-full bg-gold-600 animate-pulse -z-0 opacity-20 group-hover:opacity-40 blur-xl transition-opacity"></div>
+                        </div>
+                        <div className="flex-1 text-center md:text-left mb-2">
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
+                                <h1 className="text-3xl md:text-5xl font-serif font-black text-white">{profile.username}</h1>
+                                <span className={`px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest ${profile.role === 'admin' ? 'bg-gold-600 text-stone-950' : 'bg-stone-800 text-stone-400 border border-stone-700'}`}>
+                                    {profile.role === 'admin' ? 'Fundador' : 'Guerrero'}
+                                </span>
+                            </div>
+                            <p className="text-stone-400 italic text-sm md:text-base max-w-2xl">{profile.bio || 'Sin historia registrada...'}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <main className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Stats Section */}
+                <div className="lg:col-span-2 space-y-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <StatCard icon={<Swords className="text-emerald-500" />} label="Victorias" value="--" />
+                        <StatCard icon={<TrendingUp className="text-gold-500" />} label="ELO" value="--" />
+                        <StatCard icon={<Award className="text-purple-500" />} label="Civilización" value={profile.favorite_civ || '--'} />
+                    </div>
+
+                    <div className="bg-stone-900/50 border border-white/5 rounded-2xl p-8 backdrop-blur-sm">
+                        <h3 className="text-xl font-serif font-bold text-white mb-6 flex items-center gap-2">
+                            <MessageSquare className="text-gold-500" size={20} /> Crónica de Guerra
+                        </h3>
+                        <p className="text-stone-300 leading-relaxed whitespace-pre-wrap">{profile.reason || 'Este guerrero aún no ha compartido su motivación para unirse al clan.'}</p>
+                    </div>
+
+                    {/* Placeholder for future API integration */}
+                    <div className="bg-stone-900/50 border border-white/5 rounded-2xl p-8 backdrop-blur-sm opacity-50 cursor-not-allowed">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-serif font-bold text-white flex items-center gap-2">
+                                <Swords className="text-gold-500" size={20} /> Historial de Batallas
+                            </h3>
+                            <span className="text-[10px] bg-gold-900/20 text-gold-500 px-2 py-1 rounded border border-gold-600/30">Próximamente</span>
+                        </div>
+                        <div className="flex flex-col items-center py-10">
+                            <p className="text-stone-500 italic">Conectando con las APIs de AOE... Esperando suministros.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Sidebar */}
+                <div className="space-y-6">
+                    <div className="bg-stone-900 border border-gold-600/20 rounded-2xl p-6 shadow-xl">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-gold-500 mb-6">Información de Combate</h4>
+                        <div className="space-y-4">
+                            <InfoRow label="Steam ID" value={profile.steam_id || 'Oculto'} />
+                            <InfoRow label="Miembro desde" value={new Date(profile.created_at).toLocaleDateString()} />
+                            {profile.aoe_insights_url && (
+                                <a
+                                    href={profile.aoe_insights_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-stone-800 hover:bg-stone-750 text-gold-400 rounded-xl border border-gold-600/30 transition-all font-bold text-sm mt-4"
+                                >
+                                    Ver en AOE Insights <ExternalLink size={14} />
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <Footer />
+        </div>
+    );
+};
+
+const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
+    <div className="bg-stone-900 border border-stone-800 p-6 rounded-xl text-center flex flex-col items-center gap-2 hover:border-gold-600/30 transition-all">
+        {icon}
+        <p className="text-[10px] uppercase tracking-widest text-stone-500 font-bold">{label}</p>
+        <p className="text-2xl font-serif font-bold text-white">{value}</p>
+    </div>
+);
+
+const InfoRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+    <div className="flex justify-between items-center text-sm py-2 border-b border-stone-800">
+        <span className="text-stone-500 font-medium">{label}</span>
+        <span className="text-white font-bold">{value}</span>
+    </div>
+);
