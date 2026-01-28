@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
 import { X, Camera, Save, Loader2, User, FileText } from 'lucide-react';
+import { ImageCropper } from './ImageCropper';
 
 interface ProfileEditorProps {
     profile: UserProfile;
@@ -21,22 +22,32 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
         setIsVisible(true);
     }, []);
 
-    const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
+
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files.length > 0) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.addEventListener('load', () => setTempImageSrc(reader.result?.toString() || null));
+            reader.readAsDataURL(file);
+            // Reset value so same file can be selected again
+            event.target.value = '';
+        }
+    };
+
+    const handleCropComplete = async (blob: Blob) => {
         try {
             setUploading(true);
-            if (!event.target.files || event.target.files.length === 0) {
-                throw new Error('Debes seleccionar una imagen.');
-            }
+            setTempImageSrc(null); // Hide cropper immediately or keep it? Better hide.
 
-            const file = event.target.files[0];
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${profile.id}-${Math.random()}.${fileExt}`;
+            const fileName = `${profile.id}-${Math.random()}.jpg`; // Always JPG from cropper
             const filePath = `${fileName}`;
 
-            // Upload to 'avatars' bucket (User needs to create this in Supabase Storage with public access)
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
-                .upload(filePath, file);
+                .upload(filePath, blob, {
+                    contentType: 'image/jpeg'
+                });
 
             if (uploadError) throw uploadError;
 
@@ -46,7 +57,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
 
             setAvatarUrl(publicUrl);
         } catch (error: any) {
-            alert(error.message);
+            console.error(error);
+            alert(error.message || 'Error al subir la imagen');
         } finally {
             setUploading(false);
         }
@@ -86,7 +98,17 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
         <div className={`fixed inset-0 z-[70] flex items-center justify-center p-4 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={closeWithAnimation} />
 
+            {/* Image Cropper Overlay */}
+            {tempImageSrc && (
+                <ImageCropper
+                    imageSrc={tempImageSrc}
+                    onCancel={() => setTempImageSrc(null)}
+                    onCropComplete={handleCropComplete}
+                />
+            )}
+
             <div className={`relative w-full max-w-md bg-stone-900 border border-gold-600/30 rounded-2xl shadow-2xl transform transition-all duration-300 ${isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-10'}`}>
+                {/* ... header ... */}
                 <div className="p-6 border-b border-gold-600/20 flex justify-between items-center bg-black/20">
                     <h2 className="text-xl font-serif font-bold text-white tracking-wide">Editar Perfil</h2>
                     <button onClick={closeWithAnimation} className="text-stone-500 hover:text-white transition-colors">
@@ -108,7 +130,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
                             </div>
                             <label className="absolute bottom-0 right-0 p-2 bg-gold-600 hover:bg-gold-500 text-stone-900 rounded-full cursor-pointer transition-all shadow-md group-hover:scale-110">
                                 <Camera size={16} />
-                                <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} />
+                                <input type="file" className="hidden" accept="image/*" onChange={handleFileSelect} disabled={uploading} />
                             </label>
                         </div>
                         <p className="text-[10px] uppercase tracking-widest text-stone-500 font-bold">Cambiar Estandarte</p>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, LogOut, User, Settings } from 'lucide-react';
+import { LogIn, LogOut, User, Settings, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ProfileEditor } from './ProfileEditor';
 import { useAuth } from '../AuthContext';
@@ -43,10 +43,16 @@ export const AuthStatus: React.FC = () => {
                     <div className="absolute right-0 mt-2 w-48 bg-stone-900 border border-gold-700/30 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
                         <div className="p-2 space-y-1">
                             <button
-                                onClick={() => setIsProfileOpen(true)}
+                                onClick={() => navigate(`/user/${profile?.username || user.email}`)}
                                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gold-600/20 hover:text-gold-400 rounded transition-colors text-left"
                             >
                                 <User size={16} /> Ver Perfil
+                            </button>
+                            <button
+                                onClick={() => setIsProfileOpen(true)}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gold-600/20 hover:text-gold-400 rounded transition-colors text-left"
+                            >
+                                <Edit size={16} /> Editar Perfil
                             </button>
                             {profile?.role === 'admin' && (
                                 <button

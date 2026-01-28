@@ -14,12 +14,17 @@ const HomePage: React.FC = () => {
   const { user, login, profile, refreshProfile } = useAuth();
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
 
-  const handleJoinClick = () => {
-    if (!user) {
-      login();
-    } else {
+  // Check if we are returning from a login flow initiated by the join process
+  React.useEffect(() => {
+    const isJoining = localStorage.getItem('joining_clan');
+    if (isJoining && user) {
       setIsJoinModalOpen(true);
+      localStorage.removeItem('joining_clan');
     }
+  }, [user]);
+
+  const handleJoinClick = () => {
+    setIsJoinModalOpen(true);
   };
 
   return (
@@ -49,6 +54,7 @@ const HomePage: React.FC = () => {
           profile={profile}
           onClose={() => setIsJoinModalOpen(false)}
           onSuccess={refreshProfile}
+          onLogin={login}
         />
       )}
     </div>
