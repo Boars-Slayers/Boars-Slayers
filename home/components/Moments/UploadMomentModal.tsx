@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { X, Upload, Users, Image as ImageIcon, Film, Loader2 } from 'lucide-react';
+import { X, Upload, Users, Loader2 } from 'lucide-react';
 import { Member } from '../../types';
 
 interface UploadMomentModalProps {

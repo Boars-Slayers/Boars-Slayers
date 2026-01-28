@@ -55,14 +55,14 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
     const fetchMoments = async () => {
         try {
             // Fetch moments uploaded by the user
-            const { data: uploadedMoments, error: uploadError } = await supabase
+            const { data: uploadedMoments } = await supabase
                 .from('moments')
                 .select('*')
                 .eq('user_id', member.id)
                 .order('created_at', { ascending: false });
 
             // Fetch moments where the user is tagged
-            const { data: taggedData, error: tagError } = await supabase
+            const { data: taggedData } = await supabase
                 .from('moment_tags')
                 .select('moment_id')
                 .eq('user_id', member.id);
@@ -217,19 +217,15 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
                     </div>
                 </div>
             </div>
+
+            {currentUser && (
+                <UploadMomentModal
+                    isOpen={isUploadModalOpen}
+                    onClose={() => setIsUploadModalOpen(false)}
+                    onUploadComplete={fetchMoments}
+                    currentUserId={currentUser.id}
+                />
+            )}
         </div>
-
-            {
-        currentUser && (
-            <UploadMomentModal
-                isOpen={isUploadModalOpen}
-                onClose={() => setIsUploadModalOpen(false)}
-                onUploadComplete={fetchMoments}
-                currentUserId={currentUser.id}
-            />
-        )
-    }
-        </div >
-
     );
 };

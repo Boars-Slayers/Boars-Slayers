@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Moment, MomentTag, Member } from '../../types';
+import { Moment, Member } from '../../types';
 import { supabase } from '../../lib/supabase';
-import { User, Tag, Calendar } from 'lucide-react';
+import { Tag, Calendar } from 'lucide-react';
 
 interface MomentCardProps {
     moment: Moment;
     currentUser: any; // Context auth user
 }
 
-export const MomentCard: React.FC<MomentCardProps> = ({ moment, currentUser }) => {
-    const [tags, setTags] = useState<MomentTag[]>([]);
+export const MomentCard: React.FC<MomentCardProps> = ({ moment }) => {
     const [taggedUsers, setTaggedUsers] = useState<Member[]>([]);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchTags = async () => {
@@ -23,8 +21,6 @@ export const MomentCard: React.FC<MomentCardProps> = ({ moment, currentUser }) =
                     .eq('moment_id', moment.id);
 
                 if (tagData) {
-                    setTags(tagData);
-
                     // Fetch user details for each tag
                     const userIds = tagData.map(t => t.user_id);
                     if (userIds.length > 0) {
@@ -49,7 +45,7 @@ export const MomentCard: React.FC<MomentCardProps> = ({ moment, currentUser }) =
             } catch (error) {
                 console.error("Error fetching moment details:", error);
             } finally {
-                setLoading(false);
+                // Done loading
             }
         };
 
