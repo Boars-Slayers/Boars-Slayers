@@ -213,10 +213,12 @@ export const ClanChat: React.FC = () => {
                 .eq('message_id', messageId)
                 .eq('user_id', user.id)
                 .eq('emoji', emoji);
+            if (error) console.error(error);
         } else {
             const { error } = await supabase
                 .from('message_reactions')
                 .insert({ message_id: messageId, user_id: user.id, emoji });
+            if (error) console.error(error);
         }
         setShowEmojiPicker(null);
     };
