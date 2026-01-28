@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { Tournament } from '../types';
+import { supabase } from '../../lib/supabase';
+import { Tournament } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { Loader, Calendar, Users, Trophy } from 'lucide-react';
 
