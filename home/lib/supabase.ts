@@ -40,4 +40,6 @@ export interface UserProfile {
     streak?: number;
     last_stats_update?: string;
     created_at: string;
+    roles?: ClanRole[];
+    badges?: { id: string, image_url: string, description: string }[];
 }

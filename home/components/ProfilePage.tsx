@@ -28,12 +28,25 @@ export const ProfilePage: React.FC = () => {
             setLoading(true);
             const { data, error } = await supabase
                 .from('profiles')
-                .select('*')
+                .select(`
+                    *,
+                    user_roles (
+                        clan_roles (name, color)
+                    ),
+                    user_badges (
+                        badges (*)
+                    )
+                `)
                 .eq('username', username)
                 .single();
 
             if (!error && data) {
-                setProfile(data);
+                const formattedProfile = {
+                    ...data,
+                    roles: data.user_roles?.map((ur: any) => ur.clan_roles) || [],
+                    badges: data.user_badges?.map((ub: any) => ub.badges) || []
+                };
+                setProfile(formattedProfile);
 
                 // Use cached stats if available
                 if (data.elo_1v1) {
@@ -43,7 +56,7 @@ export const ProfilePage: React.FC = () => {
                         elo1v1: data.elo_1v1,
                         eloTG: data.elo_tg,
                         winRate1v1: data.win_rate_1v1,
-                        gamesPlayed: data.games_played,
+                        games_played: data.games_played,
                         streak: data.streak
                     });
                 } else if (data.steam_id) {
@@ -53,8 +66,8 @@ export const ProfilePage: React.FC = () => {
 
                 // Fetch Moments
                 fetchMoments(data.id);
-                // Fetch Badges
-                fetchUserBadges(data.id);
+                // Set Badges (already fetched in join)
+                setUserBadges(formattedProfile.badges);
             }
             setLoading(false);
         };
@@ -157,11 +170,29 @@ export const ProfilePage: React.FC = () => {
                             <div className="absolute inset-0 rounded-full bg-gold-600 animate-pulse -z-0 opacity-20 group-hover:opacity-40 blur-xl transition-opacity"></div>
                         </div>
                         <div className="flex-1 text-center md:text-left mb-2">
-                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
                                 <h1 className="text-3xl md:text-5xl font-serif font-black text-white">{profile.username}</h1>
-                                <span className={`px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest ${profile.role === 'admin' ? 'bg-gold-600 text-stone-950' : 'bg-stone-800 text-stone-400 border border-stone-700'}`}>
-                                    {profile.role === 'admin' ? 'Fundador' : profile.role}
-                                </span>
+                                <div className="flex flex-wrap gap-2">
+                                    {profile.roles && profile.roles.length > 0 ? (
+                                        profile.roles.map((r, i) => (
+                                            <span
+                                                key={i}
+                                                className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border"
+                                                style={{
+                                                    backgroundColor: `${r.color}20`,
+                                                    color: r.color,
+                                                    borderColor: `${r.color}40`
+                                                }}
+                                            >
+                                                {r.name}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span className={`px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest ${profile.role === 'admin' ? 'bg-gold-600 text-stone-950' : 'bg-stone-800 text-stone-400 border border-stone-700'}`}>
+                                            {profile.role === 'admin' ? 'Fundador' : profile.role}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <p className="text-stone-400 italic text-sm md:text-base max-w-2xl">{profile.bio || 'Sin historia registrada...'}</p>
                         </div>

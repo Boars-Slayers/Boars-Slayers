@@ -8,31 +8,47 @@ import { BadgeManager } from './BadgeManager';
 import { RoleManager } from './RoleManager';
 import { TournamentManager } from './TournamentManager';
 import { UserBadgeManager } from './UserBadgeManager';
-import { Award } from 'lucide-react';
+import { ShowmatchManager } from './ShowmatchManager';
+import { UserCreator } from './UserCreator';
+import { Award, Swords, UserPlus } from 'lucide-react';
 
 export const AdminPanel: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'users' | 'badges' | 'roles' | 'tournaments'>('users');
+    const [activeTab, setActiveTab] = useState<'users' | 'badges' | 'roles' | 'tournaments' | 'showmatches'>('users');
     const [filter, setFilter] = useState<'all' | 'candidate' | 'member'>('all');
     const [search, setSearch] = useState('');
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [roles, setRoles] = useState<ClanRole[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingBadgesUser, setEditingBadgesUser] = useState<{ id: string, username: string } | null>(null);
+    const [isCreatingUser, setIsCreatingUser] = useState(false);
 
     const fetchData = async () => {
         setLoading(true);
 
-        // Fetch users
+        // Fetch users with roles and badges
         const { data: usersData, error: usersError } = await supabase
             .from('profiles')
-            .select('*')
+            .select(`
+                *,
+                user_roles (
+                    clan_roles (id, name, color)
+                ),
+                user_badges (
+                    badges (*)
+                )
+            `)
             .order('created_at', { ascending: false });
 
         if (!usersError && usersData) {
-            setUsers(usersData);
+            const formattedUsers = usersData.map((u: any) => ({
+                ...u,
+                roles_list: u.user_roles?.map((ur: any) => ur.clan_roles) || [],
+                badges_list: u.user_badges?.map((ub: any) => ub.badges) || []
+            }));
+            setUsers(formattedUsers);
         }
 
-        // Fetch roles (if table exists)
+        // Fetch roles
         const { data: rolesData, error: rolesError } = await supabase
             .from('clan_roles')
             .select('*')
@@ -40,8 +56,6 @@ export const AdminPanel: React.FC = () => {
 
         if (!rolesError && rolesData) {
             setRoles(rolesData);
-        } else if (rolesError) {
-            console.warn("Could not fetch roles (maybe table doesn't exist yet)", rolesError);
         }
 
         setLoading(false);
@@ -54,7 +68,48 @@ export const AdminPanel: React.FC = () => {
         }
     }, [activeTab]);
 
-    const handleRoleUpdate = async (userId: string, newRole: string) => {
+    const toggleUserRole = async (userId: string, roleId: string, isAssigned: boolean) => {
+        if (isAssigned) {
+            // Remove role
+            const { error } = await supabase
+                .from('user_roles')
+                .delete()
+                .eq('user_id', userId)
+                .eq('role_id', roleId);
+
+            if (!error) {
+                setUsers(users.map(u => {
+                    if (u.id === userId) {
+                        return {
+                            ...u,
+                            roles_list: (u as any).roles_list.filter((r: any) => r.id !== roleId)
+                        };
+                    }
+                    return u;
+                }));
+            }
+        } else {
+            // Add role
+            const { error } = await supabase
+                .from('user_roles')
+                .insert({ user_id: userId, role_id: roleId });
+
+            if (!error) {
+                const roleToAdd = roles.find(r => r.id === roleId);
+                setUsers(users.map(u => {
+                    if (u.id === userId) {
+                        return {
+                            ...u,
+                            roles_list: [...((u as any).roles_list || []), roleToAdd]
+                        };
+                    }
+                    return u;
+                }));
+            }
+        }
+    };
+
+    const handlePrimaryRoleUpdate = async (userId: string, newRole: string) => {
         const { error } = await supabase
             .from('profiles')
             .update({ role: newRole })
@@ -62,9 +117,6 @@ export const AdminPanel: React.FC = () => {
 
         if (!error) {
             setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
-        } else {
-            console.error('Error updating role:', error);
-            alert('Error al actualizar el rol');
         }
     };
 
@@ -143,6 +195,13 @@ export const AdminPanel: React.FC = () => {
                         >
                             Torneos
                         </button>
+                        <button
+                            onClick={() => setActiveTab('showmatches')}
+                            className={`px-4 py-2 rounded-md font-medium transition-all ${activeTab === 'showmatches' ? 'bg-stone-800 text-white shadow-sm' : 'text-stone-400 hover:text-white'
+                                }`}
+                        >
+                            Showmatchs
+                        </button>
                     </div>
                 </div>
 
@@ -166,6 +225,13 @@ export const AdminPanel: React.FC = () => {
                                     className="w-full bg-stone-900 border border-stone-800 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-gold-600/50 focus:border-gold-600 outline-none transition-all placeholder:text-stone-600"
                                 />
                             </div>
+
+                            <button
+                                onClick={() => setIsCreatingUser(true)}
+                                className="bg-gold-600 hover:bg-gold-700 text-black font-bold px-4 py-3 rounded-xl flex items-center gap-2 transition-colors text-sm whitespace-nowrap"
+                            >
+                                <UserPlus size={18} /> Añadir Miembro
+                            </button>
                         </div>
 
                         {loading ? (
@@ -208,16 +274,45 @@ export const AdminPanel: React.FC = () => {
                                                             {user.steam_id || <span className="text-stone-600 italic">No vinculada</span>}
                                                         </td>
                                                         <td className="p-6">
-                                                            <span
-                                                                className="px-2 py-1 rounded text-xs font-bold uppercase tracking-wider border"
-                                                                style={{
-                                                                    backgroundColor: `${getRoleColor(user.role)}30`, // 30 hex = ~20% opacity
-                                                                    color: getRoleColor(user.role),
-                                                                    borderColor: `${getRoleColor(user.role)}50`
-                                                                }}
-                                                            >
-                                                                {user.role}
-                                                            </span>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {((user as any).roles_list || []).map((r: any) => (
+                                                                    <span
+                                                                        key={r.id}
+                                                                        className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1"
+                                                                        style={{
+                                                                            backgroundColor: `${r.color}20`,
+                                                                            color: r.color,
+                                                                            borderColor: `${r.color}50`
+                                                                        }}
+                                                                    >
+                                                                        {r.name}
+                                                                        <button
+                                                                            onClick={() => toggleUserRole(user.id, r.id, true)}
+                                                                            className="hover:scale-125 transition-transform"
+                                                                        >
+                                                                            <X size={10} />
+                                                                        </button>
+                                                                    </span>
+                                                                ))}
+                                                                <div className="relative group/add">
+                                                                    <button className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-dashed border-stone-700 text-stone-600 hover:border-stone-500 hover:text-stone-400">
+                                                                        + Rol
+                                                                    </button>
+                                                                    <div className="absolute top-full left-0 mt-1 hidden group-hover/add:block bg-stone-900 border border-stone-800 rounded shadow-2xl z-50 p-1 min-w-[120px]">
+                                                                        {roles.filter(r => !((user as any).roles_list || []).some((ur: any) => ur.id === r.id)).map(r => (
+                                                                            <button
+                                                                                key={r.id}
+                                                                                onClick={() => toggleUserRole(user.id, r.id, false)}
+                                                                                className="w-full text-left px-2 py-1.5 rounded hover:bg-white/5 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"
+                                                                                style={{ color: r.color }}
+                                                                            >
+                                                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color }} />
+                                                                                {r.name}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </td>
                                                         <td className="p-6">
                                                             <div className="flex items-center gap-2">
@@ -230,7 +325,7 @@ export const AdminPanel: React.FC = () => {
                                                                 {user.role === 'candidate' ? (
                                                                     <>
                                                                         <button
-                                                                            onClick={() => handleRoleUpdate(user.id, 'member')}
+                                                                            onClick={() => handlePrimaryRoleUpdate(user.id, 'member')}
                                                                             title="Aceptar en el clan"
                                                                             className="p-2 bg-emerald-900/20 text-emerald-500 hover:bg-emerald-900/40 rounded-lg border border-emerald-800/50 transition-colors"
                                                                         >
@@ -245,18 +340,15 @@ export const AdminPanel: React.FC = () => {
                                                                         </button>
                                                                     </>
                                                                 ) : (
-                                                                    // Role Selector for Approved Members
                                                                     <div className="relative group/select">
                                                                         <select
                                                                             value={user.role}
-                                                                            onChange={(e) => handleRoleUpdate(user.id, e.target.value)}
+                                                                            onChange={(e) => handlePrimaryRoleUpdate(user.id, e.target.value)}
                                                                             className="appearance-none bg-stone-950 text-stone-300 border border-stone-800 rounded-lg py-1.5 pl-3 pr-8 text-sm focus:border-gold-600 focus:ring-1 focus:ring-gold-600 outline-none cursor-pointer hover:bg-stone-900"
                                                                         >
                                                                             {roles.map(r => (
                                                                                 <option key={r.id} value={r.name}>{r.name.charAt(0).toUpperCase() + r.name.slice(1)}</option>
                                                                             ))}
-                                                                            {/* Fallback if user has a role not in db yet */}
-                                                                            {!roles.find(r => r.name === user.role) && <option value={user.role}>{user.role}</option>}
                                                                         </select>
                                                                         <Settings size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" />
                                                                     </div>
@@ -264,7 +356,7 @@ export const AdminPanel: React.FC = () => {
 
                                                                 {user.role !== 'candidate' && (
                                                                     <button
-                                                                        onClick={() => confirm('¿Revocar membresía y volver a estado de solicitud?') && handleRoleUpdate(user.id, 'candidate')}
+                                                                        onClick={() => confirm('¿Revocar membresía y volver a estado de solicitud?') && handlePrimaryRoleUpdate(user.id, 'candidate')}
                                                                         title="Revocar / Degradar"
                                                                         className="p-2 ml-2 bg-stone-800 text-stone-400 hover:bg-red-900/20 hover:text-red-500 rounded-lg transition-colors"
                                                                     >
@@ -296,16 +388,26 @@ export const AdminPanel: React.FC = () => {
                     <RoleManager />
                 ) : activeTab === 'tournaments' ? (
                     <TournamentManager />
+                ) : activeTab === 'showmatches' ? (
+                    <ShowmatchManager />
                 ) : (
                     <BadgeManager />
                 )}
 
-                {/* Badge Manager Modal */}
+                {/* User Badges Modal */}
                 {editingBadgesUser && (
                     <UserBadgeManager
                         userId={editingBadgesUser.id}
                         username={editingBadgesUser.username}
                         onClose={() => setEditingBadgesUser(null)}
+                    />
+                )}
+
+                {/* User Creator Modal */}
+                {isCreatingUser && (
+                    <UserCreator
+                        onClose={() => setIsCreatingUser(false)}
+                        onUserCreated={() => fetchData()}
                     />
                 )}
             </main>

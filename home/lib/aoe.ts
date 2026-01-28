@@ -27,26 +27,25 @@ export const fetchPlayerStats = async (steamId: string): Promise<PlayerStats | n
     if (!/^\d+$/.test(cleanId)) return null;
 
     try {
-        // Use aoe2companion search API which is more reliable than nightbot text
-        const response = await fetch(`https://data.aoe2companion.com/api/profiles?search=${cleanId}`);
-        if (!response.ok) return null;
+        const { data, error } = await supabase.functions.invoke('proxy-match-history', {
+            body: { steamId: cleanId }
+        });
 
-        const data = await response.json();
-        const profiles = data.profiles || [];
+        if (error || !data?.stats) {
+            console.warn("Failed to fetch AoE stats via proxy:", error);
+            return null;
+        }
 
-        // Find the profile that matches steam_id (it might return multiple if searching by name)
-        const profile = profiles.find((p: any) => p.steam_id === cleanId || p.profile_id.toString() === cleanId);
-
-        if (!profile) return null;
+        const { stats } = data;
 
         return {
             steamId: cleanId,
-            name: profile.name,
-            elo1v1: profile.rating || null,
-            eloTG: profile.games?.find((g: any) => g.leaderboard_id === 4)?.rating || null,
-            winRate1v1: profile.games?.find((g: any) => g.leaderboard_id === 3)?.win_rate || null,
-            gamesPlayed: profile.games?.reduce((acc: number, g: any) => acc + (g.games || 0), 0) || 0,
-            streak: profile.games?.find((g: any) => g.leaderboard_id === 3)?.streak || 0
+            name: stats.name,
+            elo1v1: stats.elo1v1,
+            eloTG: stats.eloTG,
+            winRate1v1: stats.winRate,
+            gamesPlayed: stats.gamesPlayed,
+            streak: 0 // No clear way to scrape streak easily from main profile page without more parsing
         };
 
     } catch (error) {
@@ -69,7 +68,6 @@ export const syncPlayerStats = async (profileId: string, steamId: string) => {
             elo_tg: stats.eloTG,
             win_rate_1v1: stats.winRate1v1,
             games_played: stats.gamesPlayed,
-            streak: stats.streak,
             last_stats_update: new Date().toISOString()
         })
         .eq('id', profileId);

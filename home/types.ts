@@ -2,6 +2,8 @@ export interface Member {
   id: string;
   name: string;
   role: string;
+  roles?: { name: string, color: string }[];
+  badges?: { id: string, image_url: string, description: string }[];
   avatarUrl: string; // This will point to your local PNG eventually
   favoriteCiv?: string;
   steamId?: string;
@@ -30,6 +32,9 @@ export interface Tournament {
   created_by: string;
   max_participants: number;
   bracket_type: string;
+  image_url?: string;
+  sponsors?: string[];
+  prizes?: string[];
   created_at: string;
   // joined fields
   participants_count?: number;
@@ -68,4 +73,32 @@ export interface MomentTag {
   moment_id: string;
   user_id: string;
   created_at: string;
+}
+
+export interface Showmatch {
+  id: string;
+  title: string;
+  description?: string;
+  player1_id?: string;
+  player2_id?: string;
+  p1_name?: string;
+  p2_name?: string;
+  scheduled_time: string;
+  stream_url?: string;
+  status: 'scheduled' | 'live' | 'completed' | 'cancelled';
+  winner_id?: string;
+  result_score?: string;
+  created_at: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  user_id: string;
+  content: string;
+  type: string;
+  created_at: string;
+  user?: {
+    username: string;
+    avatar_url: string;
+  };
 }

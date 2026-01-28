@@ -64,17 +64,29 @@ export const TournamentList: React.FC = () => {
                             onClick={() => navigate(`/tournaments/${tournament.id}`)}
                             className="group bg-stone-900/40 border border-stone-800 rounded-xl overflow-hidden hover:border-gold-500/50 transition-all duration-300 cursor-pointer hover:shadow-2xl hover:shadow-gold-900/10"
                         >
-                            <div className="h-32 bg-gradient-to-br from-stone-800 to-stone-900 relative p-6">
-                                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
-                   ${tournament.status === 'open' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                                        tournament.status === 'ongoing' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                                            tournament.status === 'completed' ? 'bg-stone-700 text-stone-400' : 'bg-yellow-500/20 text-yellow-500'}
-                 `}>
+                            <div className="h-40 relative group-hover:h-48 transition-all duration-500">
+                                {tournament.image_url ? (
+                                    <img
+                                        src={tournament.image_url}
+                                        alt={tournament.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-stone-800 to-stone-900 flex items-center justify-center">
+                                        <Trophy className="text-stone-700 group-hover:text-gold-500/30 transition-colors duration-500" size={64} />
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-transparent opacity-60" />
+                                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border z-10
+                    ${tournament.status === 'open' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                                        tournament.status === 'ongoing' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                            tournament.status === 'completed' ? 'bg-stone-700 text-stone-400 border-stone-600' :
+                                                'bg-yellow-500/20 text-yellow-500 border-yellow-500/30'}
+                  `}>
                                     {tournament.status === 'open' ? 'Inscripciones Abiertas' :
                                         tournament.status === 'ongoing' ? 'En Curso' :
                                             tournament.status === 'draft' ? 'Borrador' : 'Finalizado'}
                                 </div>
-                                <Trophy className="text-stone-700 group-hover:text-gold-500/30 transition-colors duration-500" size={64} />
                             </div>
 
                             <div className="p-6">

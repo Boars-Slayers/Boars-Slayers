@@ -9,7 +9,11 @@ import { Routes, Route } from 'react-router-dom';
 import { ProfilePage } from './components/ProfilePage';
 import { AdminPanel } from './components/AdminPanel';
 import { TournamentList } from './components/tournaments/TournamentList';
+import { TournamentDetails } from './components/tournaments/TournamentDetails';
+import { ShowmatchesPage } from './components/ShowmatchesPage';
+import { MomentsPage } from './components/MomentsPage';
 import { RankingPage } from './components/RankingPage';
+import { ClanChat } from './components/ClanChat';
 
 const HomePage: React.FC = () => {
   const { user, login, profile, refreshProfile } = useAuth();
@@ -76,6 +80,13 @@ const App: React.FC = () => {
             <Footer />
           </div>
         } />
+        <Route path="/tournaments/:id" element={
+          <div className="min-h-screen bg-stone-950 text-gray-200">
+            <Navbar />
+            <TournamentDetails />
+            <Footer />
+          </div>
+        } />
         <Route path="/ranking" element={
           <div className="min-h-screen bg-stone-950 text-gray-200">
             <Navbar />
@@ -83,9 +94,24 @@ const App: React.FC = () => {
             <Footer />
           </div>
         } />
+        <Route path="/showmatchs" element={
+          <div className="min-h-screen bg-stone-950 text-gray-200">
+            <Navbar />
+            <ShowmatchesPage />
+            <Footer />
+          </div>
+        } />
+        <Route path="/moments" element={
+          <div className="min-h-screen bg-stone-950 text-gray-200">
+            <Navbar />
+            <MomentsPage />
+            <Footer />
+          </div>
+        } />
         {/* Fallback to home */}
         <Route path="*" element={<HomePage />} />
       </Routes>
+      <ClanChat />
     </AuthProvider>
   );
 };

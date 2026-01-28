@@ -32,15 +32,47 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, onClick }) => {
           </div>
         </div>
 
-        {/* Name & Role */}
+        {/* Name & Roles */}
         <h3 className="text-xl font-serif font-bold text-gray-100 text-center mb-1 group-hover:text-gold-400 transition-colors">
           {member.name}
         </h3>
-        <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">
-          {member.role}
-        </span>
+        <div className="flex flex-wrap justify-center gap-1 mb-2">
+          {member.roles && member.roles.length > 0 ? (
+            member.roles.map((r, i) => (
+              <span
+                key={i}
+                className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border font-bold"
+                style={{
+                  backgroundColor: `${r.color}20`,
+                  color: r.color,
+                  borderColor: `${r.color}40`
+                }}
+              >
+                {r.name}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">
+              {member.role}
+            </span>
+          )}
+        </div>
       </div>
 
+      {/* Badges Preview */}
+      {member.badges && member.badges.length > 0 && (
+        <div className="flex -space-x-1.5 overflow-hidden mt-1">
+          {member.badges.slice(0, 5).map((badge) => (
+            <img
+              key={badge.id}
+              src={badge.image_url}
+              alt="Badge"
+              className="inline-block h-5 w-5 rounded border border-gold-600/30 bg-stone-900 object-cover"
+              title={badge.description}
+            />
+          ))}
+        </div>
+      )}
       {/* Card Footer Decoration */}
       <div className="h-1 w-full bg-gradient-to-r from-transparent via-gold-700/50 to-transparent mt-2" />
     </div>

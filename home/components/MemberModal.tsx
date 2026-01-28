@@ -41,7 +41,12 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
         };
         loadStats();
         fetchMoments();
-        fetchUserBadges();
+
+        if (member.badges) {
+            setUserBadges(member.badges);
+        } else {
+            fetchUserBadges();
+        }
 
 
         return () => {
@@ -153,9 +158,28 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
                         </div>
 
                         <h2 className="text-2xl font-serif font-bold text-white text-center mb-1">{member.name}</h2>
-                        <span className="px-3 py-1 rounded-full bg-gold-900/30 text-gold-400 text-xs uppercase tracking-widest font-bold border border-gold-900/50 mb-6">
-                            {member.role}
-                        </span>
+
+                        <div className="flex flex-wrap justify-center gap-1.5 mb-6">
+                            {member.roles && member.roles.length > 0 ? (
+                                member.roles.map((r, i) => (
+                                    <span
+                                        key={i}
+                                        className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-widest font-bold border"
+                                        style={{
+                                            backgroundColor: `${r.color}20`,
+                                            color: r.color,
+                                            borderColor: `${r.color}40`
+                                        }}
+                                    >
+                                        {r.name}
+                                    </span>
+                                ))
+                            ) : (
+                                <span className="px-3 py-1 rounded-full bg-gold-900/30 text-gold-400 text-xs uppercase tracking-widest font-bold border border-gold-900/50">
+                                    {member.role}
+                                </span>
+                            )}
+                        </div>
 
                         {onViewProfile && (
                             <button

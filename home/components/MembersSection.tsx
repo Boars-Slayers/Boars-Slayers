@@ -13,13 +13,31 @@ export const MembersSection: React.FC = () => {
 
   useEffect(() => {
     const fetchMembers = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          user_roles (
+            clan_roles (name, color)
+          ),
+          user_badges (
+            badges (*)
+          )
+        `)
         .neq('role', 'candidate')
-        .order('role', { ascending: true }); // Admin first (A-Z)
+        .order('role', { ascending: true });
 
-      if (data) setMembers(data);
+      if (error) {
+        console.error('Error fetching members:', error);
+      } else if (data) {
+        // Format the data to include roles and badges in a flatter structure
+        const formattedMembers = data.map((m: any) => ({
+          ...m,
+          roles: m.user_roles?.map((ur: any) => ur.clan_roles) || [],
+          badges: m.user_badges?.map((ub: any) => ub.badges) || []
+        }));
+        setMembers(formattedMembers);
+      }
       setLoading(false);
     };
     fetchMembers();
@@ -63,6 +81,8 @@ export const MembersSection: React.FC = () => {
                   id: m.id,
                   name: m.username,
                   role: m.role.charAt(0).toUpperCase() + m.role.slice(1),
+                  roles: m.roles,
+                  badges: m.badges,
                   avatarUrl: m.avatar_url,
                   favoriteCiv: m.favorite_civ,
                   steamId: m.steam_id
@@ -81,6 +101,8 @@ export const MembersSection: React.FC = () => {
             id: selectedMember.id,
             name: selectedMember.username,
             role: selectedMember.role.charAt(0).toUpperCase() + selectedMember.role.slice(1),
+            roles: selectedMember.roles,
+            badges: selectedMember.badges,
             avatarUrl: selectedMember.avatar_url,
             favoriteCiv: selectedMember.favorite_civ,
             steamId: selectedMember.steam_id
