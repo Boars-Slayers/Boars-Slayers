@@ -28,8 +28,8 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./home/dist/
-          server-dir: /public_html/ # Cambia esto a la carpeta de tu dominio en BanaHosting
-
+          server-dir: /boarsslayers.com/
+  
   # Job 2: Sync Supabase Database
   sync-supabase:
     runs-on: ubuntu-latest

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Logo } from './Logo';
 import { NAV_ITEMS } from '../constants';
+import { AuthStatus } from './AuthStatus';
 import { Menu, X } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -32,8 +33,8 @@ export const Navbar: React.FC = () => {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-          ? 'bg-stone-950/90 backdrop-blur-md border-b border-white/5 py-3 shadow-lg'
-          : 'bg-transparent py-6'
+        ? 'bg-stone-950/90 backdrop-blur-md border-b border-white/5 py-3 shadow-lg'
+        : 'bg-transparent py-6'
         }`}
     >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
