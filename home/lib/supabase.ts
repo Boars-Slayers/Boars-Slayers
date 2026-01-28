@@ -33,5 +33,11 @@ export interface UserProfile {
     accepted_rules?: boolean;
     contact_email?: string;
     phone_number?: string;
+    elo_1v1?: number;
+    elo_tg?: number;
+    win_rate_1v1?: number;
+    games_played?: number;
+    streak?: number;
+    last_stats_update?: string;
     created_at: string;
 }

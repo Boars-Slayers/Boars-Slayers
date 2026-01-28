@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
 import { X, ExternalLink, Shield, Send, CheckCircle2 } from 'lucide-react';
+import { syncPlayerStats } from '../lib/aoe';
 
 interface JoinModalProps {
     user: any | null;
@@ -46,6 +47,15 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
                 .eq('id', user.id);
 
             if (error) throw error;
+
+            // Sync stats immediately if steamId is provided
+            if (steamId) {
+                try {
+                    await syncPlayerStats(user.id, steamId);
+                } catch (err) {
+                    console.error('Failed to sync stats on registration:', err);
+                }
+            }
 
             // Send notification email to admin
             try {

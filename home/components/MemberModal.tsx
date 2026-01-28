@@ -23,6 +23,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
     const { user: currentUser } = useAuth();
     const [moments, setMoments] = useState<Moment[]>([]);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [userBadges, setUserBadges] = useState<{ id: string, image_url: string, description: string }[]>([]);
 
 
     useEffect(() => {
@@ -40,6 +41,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
         };
         loadStats();
         fetchMoments();
+        fetchUserBadges();
 
 
         return () => {
@@ -92,6 +94,22 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
 
         } catch (error) {
             console.error('Error fetching moments:', error);
+        }
+    };
+
+    const fetchUserBadges = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('user_badges')
+                .select('badge_id, badges(id, image_url, description)')
+                .eq('user_id', member.id);
+
+            if (data) {
+                const formattedBadges = data.map((item: any) => item.badges);
+                setUserBadges(formattedBadges);
+            }
+        } catch (error) {
+            console.error('Error fetching user badges:', error);
         }
     };
 
@@ -148,10 +166,33 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
                                 Ver Perfil
                             </button>
                         )}
+
+                        {/* Badges Sub-section */}
+                        <div className="mt-8 w-full">
+                            <h4 className="text-[10px] uppercase tracking-[0.2em] text-stone-500 font-bold mb-3 border-b border-stone-800 pb-2">Condecoraciones</h4>
+                            <div className="flex flex-wrap gap-2 justify-center">
+                                {userBadges.length > 0 ? (
+                                    userBadges.map(badge => (
+                                        <div key={badge.id} className="group/badge relative" title={badge.description}>
+                                            <img
+                                                src={badge.image_url}
+                                                alt="Badge"
+                                                className="w-10 h-10 rounded shadow-lg border border-gold-600/30 hover:border-gold-500 transition-all transform hover:scale-110"
+                                            />
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-[10px] rounded opacity-0 group-hover/badge:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20 border border-gold-600/50">
+                                                {badge.description}
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-[10px] text-stone-600 italic">Sin insignias aún</p>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     {/* Right Column: Stats & Details */}
-                    <div className="col-span-2 p-8">
+                    <div className="col-span-2 p-8 overflow-y-auto max-h-[60vh]">
                         <h3 className="text-lg font-serif text-gray-300 mb-6 flex items-center gap-2">
                             <TrendingUp size={20} className="text-gold-500" />
                             Estadísticas de Batalla
@@ -183,49 +224,47 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
                             </div>
                         </div>
 
-                        {/* Simulated Match History - Removed fake data */}
-                    </div>
+                        {/* Moments Section - Now inside the right column or spanning full if preferred */}
+                        <div className="mt-8 pt-6 border-t border-stone-800/50">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-serif text-gray-300 flex items-center gap-2">
+                                    <ImageIcon size={20} className="text-gold-500" />
+                                    Momentos
+                                </h3>
+                                {currentUser && currentUser.id === member.id && (
+                                    <button
+                                        onClick={() => setIsUploadModalOpen(true)}
+                                        className="text-xs bg-gold-600/20 hover:bg-gold-600/40 text-gold-400 px-3 py-1 rounded border border-gold-600/30 transition-colors"
+                                    >
+                                        Subir Momento
+                                    </button>
+                                )}
+                            </div>
 
-                    {/* Moments Section */}
-                    <div className="mt-8 pt-6 border-t border-stone-800/50">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-serif text-gray-300 flex items-center gap-2">
-                                <ImageIcon size={20} className="text-gold-500" />
-                                Momentos
-                            </h3>
-                            {currentUser && currentUser.id === member.id && (
-                                <button
-                                    onClick={() => setIsUploadModalOpen(true)}
-                                    className="text-xs bg-gold-600/20 hover:bg-gold-600/40 text-gold-400 px-3 py-1 rounded border border-gold-600/30 transition-colors"
-                                >
-                                    Subir Momento
-                                </button>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {moments.length > 0 ? (
-                                moments.map(moment => (
-                                    <MomentCard key={moment.id} moment={moment} currentUser={currentUser} />
-                                ))
-                            ) : (
-                                <div className="col-span-full text-center py-8 bg-stone-900/40 rounded-lg border border-stone-800 border-dashed">
-                                    <p className="text-stone-500 text-sm italic">Aún no hay momentos épicos.</p>
-                                </div>
-                            )}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {moments.length > 0 ? (
+                                    moments.map(moment => (
+                                        <MomentCard key={moment.id} moment={moment} currentUser={currentUser} />
+                                    ))
+                                ) : (
+                                    <div className="col-span-full text-center py-8 bg-black/20 rounded-lg border border-stone-800 border-dashed">
+                                        <p className="text-stone-500 text-sm italic">Aún no hay momentos épicos.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {currentUser && (
-                <UploadMomentModal
-                    isOpen={isUploadModalOpen}
-                    onClose={() => setIsUploadModalOpen(false)}
-                    onUploadComplete={fetchMoments}
-                    currentUserId={currentUser.id}
-                />
-            )}
+                {currentUser && (
+                    <UploadMomentModal
+                        isOpen={isUploadModalOpen}
+                        onClose={() => setIsUploadModalOpen(false)}
+                        onUploadComplete={fetchMoments}
+                        currentUserId={currentUser.id}
+                    />
+                )}
+            </div>
         </div>
     );
 };

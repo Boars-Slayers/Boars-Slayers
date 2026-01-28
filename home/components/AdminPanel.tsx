@@ -7,6 +7,8 @@ import { Footer } from './Footer';
 import { BadgeManager } from './BadgeManager';
 import { RoleManager } from './RoleManager';
 import { TournamentManager } from './TournamentManager';
+import { UserBadgeManager } from './UserBadgeManager';
+import { Award } from 'lucide-react';
 
 export const AdminPanel: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'users' | 'badges' | 'roles' | 'tournaments'>('users');
@@ -15,6 +17,7 @@ export const AdminPanel: React.FC = () => {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [roles, setRoles] = useState<ClanRole[]>([]);
     const [loading, setLoading] = useState(true);
+    const [editingBadgesUser, setEditingBadgesUser] = useState<{ id: string, username: string } | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -268,6 +271,16 @@ export const AdminPanel: React.FC = () => {
                                                                         <UserX size={18} />
                                                                     </button>
                                                                 )}
+
+                                                                {user.role !== 'candidate' && (
+                                                                    <button
+                                                                        onClick={() => setEditingBadgesUser({ id: user.id, username: user.username })}
+                                                                        title="Gestionar Insignias"
+                                                                        className="p-2 bg-gold-900/20 text-gold-500 hover:bg-gold-900/40 rounded-lg border border-gold-800/50 transition-colors"
+                                                                    >
+                                                                        <Award size={18} />
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -285,6 +298,15 @@ export const AdminPanel: React.FC = () => {
                     <TournamentManager />
                 ) : (
                     <BadgeManager />
+                )}
+
+                {/* Badge Manager Modal */}
+                {editingBadgesUser && (
+                    <UserBadgeManager
+                        userId={editingBadgesUser.id}
+                        username={editingBadgesUser.username}
+                        onClose={() => setEditingBadgesUser(null)}
+                    />
                 )}
             </main>
             <Footer />

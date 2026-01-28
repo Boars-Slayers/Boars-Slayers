@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { fetchPlayerStats, PlayerStats, getClanMatches } from '../lib/aoe';
+import { syncPlayerStats, PlayerStats, getClanMatches } from '../lib/aoe';
 import { Match } from '../types';
+import { useAuth } from '../AuthContext';
 
 interface RankedMember {
     id: string;
@@ -16,6 +18,8 @@ export function RankingPage() {
     const [members, setMembers] = useState<RankedMember[]>([]);
     const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(true);
+    const [syncing, setSyncing] = useState(false);
+    const { profile: currentUserProfile } = useAuth();
 
     useEffect(() => {
         loadData();
@@ -24,28 +28,38 @@ export function RankingPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            // 1. Fetch Profiles from Supabase
+            // 1. Fetch Profiles from Supabase with cached stats
             const { data: profiles, error } = await supabase
                 .from('profiles')
-                .select('id, username, avatar_url, steam_id');
+                .select('*')
+                .neq('role', 'candidate'); // Only members and admins
 
             if (error) {
                 console.error('Error fetching members:', error);
                 return;
             }
 
-            const validProfiles = profiles?.filter((p: any) => p.steam_id) || [];
+            const validProfiles = profiles || [];
 
-            // 2. Fetch AOE Stats for each
-            const membersWithStats = await Promise.all(
-                validProfiles.map(async (p: any) => {
-                    const stats = await fetchPlayerStats(p.steam_id);
-                    return { ...p, stats: stats || undefined };
-                })
-            );
+            // 2. Map profiles to RankedMember
+            const membersList: RankedMember[] = validProfiles.map(p => ({
+                id: p.id,
+                username: p.username,
+                avatar_url: p.avatar_url,
+                steam_id: p.steam_id,
+                stats: p.elo_1v1 ? {
+                    steamId: p.steam_id || '',
+                    name: p.username,
+                    elo1v1: p.elo_1v1,
+                    eloTG: p.elo_tg,
+                    winRate1v1: p.win_rate_1v1,
+                    gamesPlayed: p.games_played,
+                    streak: p.streak
+                } : undefined
+            }));
 
             // Sort by 1v1 ELO desc
-            const sortedMembers = membersWithStats.sort((a, b) => {
+            const sortedMembers = membersList.sort((a, b) => {
                 const eloA = a.stats?.elo1v1 || 0;
                 const eloB = b.stats?.elo1v1 || 0;
                 return eloB - eloA;
@@ -53,9 +67,7 @@ export function RankingPage() {
 
             setMembers(sortedMembers);
 
-            // 3. Fetch Matches (Async, don't block UI if possible, but for simplicity we wait or set separate state)
-            // We'll trigger this but not wait if we want faster initial render, 
-            // but let's just do it here for now.
+            // 4. Fetch Matches
             const clanMatches = await getClanMatches(validProfiles.map((p: any) => ({ steamId: p.steam_id })));
             setMatches(clanMatches);
 
@@ -63,6 +75,25 @@ export function RankingPage() {
             console.error(err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSyncAll = async () => {
+        if (!members.length) return;
+        setSyncing(true);
+        try {
+            // Sync each member that has a steam_id
+            for (const member of members) {
+                if (member.steam_id) {
+                    await syncPlayerStats(member.id, member.steam_id);
+                }
+            }
+            // Refresh data from DB
+            await loadData();
+        } catch (err) {
+            console.error('Error syncing stats:', err);
+        } finally {
+            setSyncing(false);
         }
     };
 
@@ -79,25 +110,44 @@ export function RankingPage() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex justify-center mb-8 space-x-4">
-                    <button
-                        onClick={() => setActiveTab('leaderboard')}
-                        className={`px-6 py-2 rounded-full font-bold transition-all ${activeTab === 'leaderboard'
-                            ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20'
-                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                            }`}
-                    >
-                        Tabla de Clasificación
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('matches')}
-                        className={`px-6 py-2 rounded-full font-bold transition-all ${activeTab === 'matches'
-                            ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20'
-                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                            }`}
-                    >
-                        Historial entre Miembros
-                    </button>
+                <div className="flex flex-col sm:flex-row justify-center items-center mb-8 gap-4">
+                    <div className="flex bg-gray-800/50 p-1 rounded-full border border-gray-700">
+                        <button
+                            onClick={() => setActiveTab('leaderboard')}
+                            className={`px-6 py-2 rounded-full font-bold transition-all ${activeTab === 'leaderboard'
+                                ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20'
+                                : 'text-gray-400 hover:text-gray-200'
+                                }`}
+                        >
+                            Tabla de Clasificación
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('matches')}
+                            className={`px-6 py-2 rounded-full font-bold transition-all ${activeTab === 'matches'
+                                ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20'
+                                : 'text-gray-400 hover:text-gray-200'
+                                }`}
+                        >
+                            Historial entre Miembros
+                        </button>
+                    </div>
+
+                    {currentUserProfile?.role === 'admin' && (
+                        <button
+                            onClick={() => handleSyncAll()}
+                            disabled={syncing}
+                            className={`px-4 py-2 rounded-lg border border-amber-600/50 text-amber-500 font-bold text-xs uppercase tracking-widest hover:bg-amber-600/10 transition-colors flex items-center gap-2 ${syncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            {syncing ? (
+                                <>
+                                    <div className="animate-spin h-3 w-3 border-t-2 border-b-2 border-amber-500 rounded-full"></div>
+                                    Sincronizando...
+                                </>
+                            ) : (
+                                'Sincronizar Estadísticas'
+                            )}
+                        </button>
+                    )}
                 </div>
 
                 {loading ? (
@@ -151,7 +201,9 @@ export function RankingPage() {
                                                                     <img className="h-10 w-10 rounded-full object-cover border border-gray-600" src={member.avatar_url || "https://api.dicebear.com/7.x/avataaars/svg"} alt="" />
                                                                 </div>
                                                                 <div className="ml-4">
-                                                                    <div className="text-sm font-medium text-white">{member.username}</div>
+                                                                    <Link to={`/user/${member.username}`} className="text-sm font-medium text-white hover:text-amber-500 transition-colors">
+                                                                        {member.username}
+                                                                    </Link>
                                                                     <div className="text-xs text-gray-500">Steam ID: {member.steam_id}</div>
                                                                 </div>
                                                             </div>

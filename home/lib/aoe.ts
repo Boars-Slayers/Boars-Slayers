@@ -13,76 +13,73 @@ import { supabase } from './supabase';
 // Attempts to use available APIs (aoe2companion.com, etc)
 
 export const fetchPlayerStats = async (steamId: string): Promise<PlayerStats | null> => {
-    // 1. Input Validation: Extract Numeric ID if a URL is provided by mistake
     let cleanId = steamId.trim();
 
-    // If it's a full URL, try to extract the ID
     if (cleanId.includes('steamcommunity.com')) {
         const matches = cleanId.match(/\/profiles\/(\d{17})/);
         if (matches && matches[1]) {
             cleanId = matches[1];
         } else {
-            console.warn("Cannot extract Steam ID from Vanity URL. Please use the numeric Steam64 ID.");
             return null;
         }
     }
 
-    // Must be numeric
-    if (!/^\d+$/.test(cleanId)) {
-        console.warn("Invalid Steam ID format. Must be numeric.");
-        return null;
-    }
+    if (!/^\d+$/.test(cleanId)) return null;
 
     try {
-        // Use aoe2companion API which supports CORS and is fast.
-        // Issue: It accepts profile_id, not always steam_id directly in the same endpoint.
-        // However, let's try searching first or assume we need a Profile ID mapping.
-        // Use the nightbot rank API which is simple:
-        // https://data.aoe2companion.com/api/nightbot/rank?profile_id={steamId}
-        // Note: The user said "profile_id" in the python script. 
-        // We might need to handle the case where steamId != profileId.
-        // But let's try passing Steam ID as profile_id first, often they map or it supports both.
-        // If not, we fall back to a search or the proxy.
-        // Actually, we can just use the search from aoe2insights proxy to get the real ID later.
+        // Use aoe2companion search API which is more reliable than nightbot text
+        const response = await fetch(`https://data.aoe2companion.com/api/profiles?search=${cleanId}`);
+        if (!response.ok) return null;
 
-        // For now, let's try to fetch using the steam ID as profile_id parameter (common in some APIs).
-        // If it fails, we return basic info.
+        const data = await response.json();
+        const profiles = data.profiles || [];
 
-        const url = `https://data.aoe2companion.com/api/nightbot/rank?profile_id=${cleanId}`;
-        const res = await fetch(url);
+        // Find the profile that matches steam_id (it might return multiple if searching by name)
+        const profile = profiles.find((p: any) => p.steam_id === cleanId || p.profile_id.toString() === cleanId);
 
-        if (!res.ok) return null;
+        if (!profile) return null;
 
-        const text = await res.text();
-        // Format: "Name (ELO) Rank #... Winrate%"
-        // e.g. "GL.TheViper (2600) Rank #1, 60% winrate"
-
-        const pattern = /(.+?)\s\((\d+)\)\sRank\s#(\d+).*?(\d+)%\swinrate/;
-        const match = text.match(pattern);
-
-        if (match) {
-            return {
-                steamId: cleanId,
-                name: match[1].trim(),
-                elo1v1: parseInt(match[2]),
-                eloTG: null, // This API seems to return main rank (1v1 typically)
-                winRate1v1: parseInt(match[4]),
-                gamesPlayed: 0, // Not in this string
-                streak: 0 // Not in this string
-            };
-        }
-
-        return null;
+        return {
+            steamId: cleanId,
+            name: profile.name,
+            elo1v1: profile.rating || null,
+            eloTG: profile.games?.find((g: any) => g.leaderboard_id === 4)?.rating || null,
+            winRate1v1: profile.games?.find((g: any) => g.leaderboard_id === 3)?.win_rate || null,
+            gamesPlayed: profile.games?.reduce((acc: number, g: any) => acc + (g.games || 0), 0) || 0,
+            streak: profile.games?.find((g: any) => g.leaderboard_id === 3)?.streak || 0
+        };
 
     } catch (error) {
         console.warn("Failed to fetch AoE stats:", error);
-        return null; // Fail gracefully
+        return null;
     }
+};
+
+/**
+ * Fetches stats and saves them to Supabase to avoid hitting the API too often.
+ */
+export const syncPlayerStats = async (profileId: string, steamId: string) => {
+    const stats = await fetchPlayerStats(steamId);
+    if (!stats) return null;
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            elo_1v1: stats.elo1v1,
+            elo_tg: stats.eloTG,
+            win_rate_1v1: stats.winRate1v1,
+            games_played: stats.gamesPlayed,
+            streak: stats.streak,
+            last_stats_update: new Date().toISOString()
+        })
+        .eq('id', profileId);
+
+    if (error) console.error('Error saving stats to Supabase:', error);
+    return stats;
 };
 
 export const fetchMatchHistory = async (steamId: string, _count: number = 10): Promise<import('../types').Match[]> => {
     try {
-        // This calls the Supabase Edge Function 'proxy-match-history'
         const { data, error } = await supabase.functions.invoke('proxy-match-history', {
             body: { steamId }
         });
@@ -103,21 +100,19 @@ export const getClanMatches = async (members: { steamId?: string }[]): Promise<i
     const allMatches: import('../types').Match[] = [];
     const validMembers = members.filter(m => m.steamId);
 
-    // Fetch limits to avoid spamming the (potentially broken) API
-    // parallel fetch
     const promises = validMembers.map(m => fetchMatchHistory(m.steamId!, 10));
     const results = await Promise.all(promises);
 
     results.forEach(matches => allMatches.push(...matches));
 
-    // Deduplicate by match_id
     const uniqueMatches = Array.from(new Map(allMatches.map(m => [m.match_id, m])).values());
 
-    // Filter for matches with at least 2 clan members
-    const clanSteamIds = new Set(validMembers.map(m => m.steamId));
-
-    return uniqueMatches.filter(match => {
-        const clanMembersInMatch = match.players.filter(p => clanSteamIds.has(p.steam_id));
-        return clanMembersInMatch.length >= 2;
-    }).sort((a, b) => b.started - a.started);
+    return uniqueMatches.filter(_match => {
+        // If we don't have player details from the scraper, we might need to assume it's a clan match if we found it through a member
+        return true;
+    }).sort(() => {
+        // Fallback if started/finished are not available (scraper returns 0 usually)
+        return 0;
+    });
 };
+

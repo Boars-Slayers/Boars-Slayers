@@ -26,9 +26,7 @@ export const MembersSection: React.FC = () => {
   }, []);
 
   const handleMemberClick = (m: UserProfile) => {
-    // Optionally open modal or just navigate
-    // Let's open modal for quick view as before, but the modal will have a "Ver Perfil Completo" button
-    setSelectedMember(m);
+    navigate(`/user/${m.username}`);
   };
 
   return (

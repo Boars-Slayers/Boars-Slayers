@@ -20,6 +20,7 @@ export const ProfilePage: React.FC = () => {
     const { user: currentUser } = useAuth();
     const [moments, setMoments] = useState<Moment[]>([]);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [userBadges, setUserBadges] = useState<{ id: string, image_url: string, description: string }[]>([]);
 
 
     useEffect(() => {
@@ -33,14 +34,27 @@ export const ProfilePage: React.FC = () => {
 
             if (!error && data) {
                 setProfile(data);
-                // Fetch AOE Stats if Steam ID exists
-                if (data.steam_id) {
-                    const aoeData = await fetchPlayerStats(data.steam_id);
-                    setStats(aoeData);
+
+                // Use cached stats if available
+                if (data.elo_1v1) {
+                    setStats({
+                        steamId: data.steam_id,
+                        name: data.username,
+                        elo1v1: data.elo_1v1,
+                        eloTG: data.elo_tg,
+                        winRate1v1: data.win_rate_1v1,
+                        gamesPlayed: data.games_played,
+                        streak: data.streak
+                    });
+                } else if (data.steam_id) {
+                    // Fetch only if not cached
+                    fetchPlayerStats(data.steam_id).then(setStats);
                 }
 
                 // Fetch Moments
                 fetchMoments(data.id);
+                // Fetch Badges
+                fetchUserBadges(data.id);
             }
             setLoading(false);
         };
@@ -87,6 +101,22 @@ export const ProfilePage: React.FC = () => {
         }
     };
 
+    const fetchUserBadges = async (userId: string) => {
+        try {
+            const { data, error } = await supabase
+                .from('user_badges')
+                .select('badge_id, badges(id, image_url, description)')
+                .eq('user_id', userId);
+
+            if (data && !error) {
+                const formattedBadges = data.map((item: any) => item.badges);
+                setUserBadges(formattedBadges);
+            }
+        } catch (error) {
+            console.error('Error fetching user badges:', error);
+        }
+    };
+
 
     if (loading) {
         return (
@@ -130,7 +160,7 @@ export const ProfilePage: React.FC = () => {
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
                                 <h1 className="text-3xl md:text-5xl font-serif font-black text-white">{profile.username}</h1>
                                 <span className={`px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest ${profile.role === 'admin' ? 'bg-gold-600 text-stone-950' : 'bg-stone-800 text-stone-400 border border-stone-700'}`}>
-                                    {profile.role === 'admin' ? 'Fundador' : 'Guerrero'}
+                                    {profile.role === 'admin' ? 'Fundador' : profile.role}
                                 </span>
                             </div>
                             <p className="text-stone-400 italic text-sm md:text-base max-w-2xl">{profile.bio || 'Sin historia registrada...'}</p>
@@ -220,6 +250,26 @@ export const ProfilePage: React.FC = () => {
                             )}
                         </div>
                     </div>
+
+                    {/* Badges Section */}
+                    {userBadges.length > 0 && (
+                        <div className="bg-stone-900 border border-gold-600/20 rounded-2xl p-6 shadow-xl">
+                            <h4 className="text-xs font-black uppercase tracking-widest text-gold-500 mb-6">Condecoraciones</h4>
+                            <div className="grid grid-cols-3 gap-4">
+                                {userBadges.map(badge => (
+                                    <div key={badge.id} className="group/badge relative flex flex-col items-center" title={badge.description}>
+                                        <div className="w-16 h-16 rounded-xl bg-stone-950 border border-gold-600/30 p-1 group-hover/badge:border-gold-500 transition-all transform group-hover/badge:scale-105 shadow-lg">
+                                            <img src={badge.image_url} alt="Badge" className="w-full h-full object-cover rounded-lg" />
+                                        </div>
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-stone-900 text-white text-xs rounded-lg opacity-0 group-hover/badge:opacity-100 transition-all whitespace-nowrap pointer-events-none z-20 border border-gold-600/50 shadow-2xl backdrop-blur-md">
+                                            <p className="font-bold text-gold-500 text-[10px] uppercase mb-1">Insignia</p>
+                                            {badge.description}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
             <Footer />
