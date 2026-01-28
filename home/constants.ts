@@ -33,5 +33,4 @@ export const NAV_ITEMS = [
       { label: 'Momentos', href: '/moments' },
     ]
   },
-  { label: 'Sobre Nosotros', href: '#about' },
 ];
