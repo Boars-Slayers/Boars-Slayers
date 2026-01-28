@@ -99,7 +99,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
 
     const fetchUserBadges = async () => {
         try {
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from('user_badges')
                 .select('badge_id, badges(id, image_url, description)')
                 .eq('user_id', member.id);
