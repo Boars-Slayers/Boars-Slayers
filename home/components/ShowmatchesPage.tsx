@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Showmatch } from '../types';
 import { Swords, Calendar, Play, User } from 'lucide-react';
 
 export const ShowmatchesPage: React.FC = () => {
+    const navigate = useNavigate();
     const [matches, setMatches] = useState<Showmatch[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -47,7 +49,11 @@ export const ShowmatchesPage: React.FC = () => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {matches.map((match) => (
-                            <div key={match.id} className="bg-stone-900/50 border border-gold-600/20 rounded-2xl overflow-hidden hover:border-gold-500/50 transition-all group">
+                            <div
+                                key={match.id}
+                                onClick={() => navigate(`/showmatchs/${match.id}`)}
+                                className="bg-stone-900/50 border border-gold-600/20 rounded-2xl overflow-hidden hover:border-gold-500/50 transition-all group cursor-pointer"
+                            >
                                 <div className="p-8">
                                     <div className="flex justify-between items-start mb-6">
                                         <div className="flex items-center gap-2 text-xs font-bold text-stone-500 uppercase tracking-widest">
@@ -119,6 +125,7 @@ export const ShowmatchesPage: React.FC = () => {
                                                 href={match.stream_url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
+                                                onClick={(e) => e.stopPropagation()}
                                                 className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-600/20"
                                             >
                                                 <Play size={20} fill="currentColor" />

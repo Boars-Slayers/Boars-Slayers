@@ -11,6 +11,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { TournamentList } from './components/tournaments/TournamentList';
 import { TournamentDetails } from './components/tournaments/TournamentDetails';
 import { ShowmatchesPage } from './components/ShowmatchesPage';
+import { ShowmatchDetail } from './components/ShowmatchDetail';
 import { MomentsPage } from './components/MomentsPage';
 import { RankingPage } from './components/RankingPage';
 import { ClanChat } from './components/ClanChat';
@@ -103,6 +104,7 @@ const App: React.FC = () => {
             <Footer />
           </div>
         } />
+        <Route path="/showmatchs/:id" element={<ShowmatchDetail />} />
         <Route path="/moments" element={
           <div className="min-h-screen bg-stone-950 text-gray-200">
             <Navbar />
