@@ -12,6 +12,7 @@ create index if not exists idx_profiles_elo_1v1 on profiles(elo_1v1 desc nulls l
 
 -- Update RLS to allow public viewing (already should be covered by "Public profiles are viewable by everyone")
 -- But ensure admins can update these fields specifically
+drop policy if exists "Admins can update stats" on profiles;
 create policy "Admins can update stats"
   on profiles for update
   using ( auth.uid() in (select id from profiles where role = 'admin') )
