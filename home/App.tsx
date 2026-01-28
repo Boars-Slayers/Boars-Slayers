@@ -9,6 +9,7 @@ import { Routes, Route } from 'react-router-dom';
 import { ProfilePage } from './components/ProfilePage';
 import { AdminPanel } from './components/AdminPanel';
 import { TournamentList } from './components/tournaments/TournamentList';
+import { RankingPage } from './components/RankingPage';
 
 const HomePage: React.FC = () => {
   const { user, login, profile, refreshProfile } = useAuth();
@@ -72,6 +73,13 @@ const App: React.FC = () => {
           <div className="min-h-screen bg-stone-950 text-gray-200">
             <Navbar />
             <TournamentList />
+            <Footer />
+          </div>
+        } />
+        <Route path="/ranking" element={
+          <div className="min-h-screen bg-stone-950 text-gray-200">
+            <Navbar />
+            <RankingPage />
             <Footer />
           </div>
         } />

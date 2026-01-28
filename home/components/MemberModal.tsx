@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Member } from '../types';
 import { X, Trophy, Crown, TrendingUp, Swords, User, Loader2 } from 'lucide-react';
 import { fetchPlayerStats, PlayerStats } from '../lib/aoe';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../AuthContext';
+import { Moment } from '../types';
+import { MomentCard } from './Moments/MomentCard';
+import { UploadMomentModal } from './Moments/UploadMomentModal';
+import { ImageIcon } from 'lucide-react';
+
 
 interface MemberModalProps {
     member: Member;
@@ -13,6 +20,10 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
     const [isVisible, setIsVisible] = useState(false);
     const [stats, setStats] = useState<PlayerStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(false);
+    const { user: currentUser } = useAuth();
+    const [moments, setMoments] = useState<Moment[]>([]);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
 
     useEffect(() => {
         setIsVisible(true);
@@ -28,6 +39,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
             }
         };
         loadStats();
+        fetchMoments();
+
 
         return () => {
             document.body.style.overflow = 'unset';
@@ -39,8 +52,52 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
         setTimeout(onClose, 300); // Wait for animation
     };
 
+    const fetchMoments = async () => {
+        try {
+            // Fetch moments uploaded by the user
+            const { data: uploadedMoments, error: uploadError } = await supabase
+                .from('moments')
+                .select('*')
+                .eq('user_id', member.id)
+                .order('created_at', { ascending: false });
+
+            // Fetch moments where the user is tagged
+            const { data: taggedData, error: tagError } = await supabase
+                .from('moment_tags')
+                .select('moment_id')
+                .eq('user_id', member.id);
+
+            let allMoments = uploadedMoments || [];
+
+            if (taggedData && taggedData.length > 0) {
+                const momentIds = taggedData.map(t => t.moment_id);
+                const { data: taggedMoments } = await supabase
+                    .from('moments')
+                    .select('*')
+                    .in('id', momentIds)
+                    .order('created_at', { ascending: false });
+
+                if (taggedMoments) {
+                    // Merge and deduplicate
+                    const combined = [...allMoments, ...taggedMoments];
+                    const uniqueMap = new Map();
+                    combined.forEach(m => uniqueMap.set(m.id, m));
+                    allMoments = Array.from(uniqueMap.values()).sort((a, b) =>
+                        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    );
+                }
+            }
+
+            setMoments(allMoments);
+
+        } catch (error) {
+            console.error('Error fetching moments:', error);
+        }
+    };
+
+
     return (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/80 backdrop-blur-sm"
@@ -127,24 +184,52 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
                         </div>
 
                         {/* Simulated Match History - Removed fake data */}
-                        <div>
-                            <p className="text-xs text-stone-500 uppercase tracking-wider mb-3">Últimas Partidas</p>
-                            <div className="space-y-2">
-                                {stats && stats.streak !== 0 ? (
-                                    <div className="flex items-center justify-between p-2 rounded bg-white/5 text-sm">
-                                        <span className="text-gray-300">Racha Actual</span>
-                                        <span className={`font-mono ${stats.streak < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                            {stats.streak > 0 ? `+${stats.streak} Victorias` : `${stats.streak} Derrotas`}
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <p className="text-stone-500 italic text-xs">Sin historial reciente.</p>
-                                )}
-                            </div>
+                    </div>
+
+                    {/* Moments Section */}
+                    <div className="mt-8 pt-6 border-t border-stone-800/50">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-serif text-gray-300 flex items-center gap-2">
+                                <ImageIcon size={20} className="text-gold-500" />
+                                Momentos
+                            </h3>
+                            {currentUser && currentUser.id === member.id && (
+                                <button
+                                    onClick={() => setIsUploadModalOpen(true)}
+                                    className="text-xs bg-gold-600/20 hover:bg-gold-600/40 text-gold-400 px-3 py-1 rounded border border-gold-600/30 transition-colors"
+                                >
+                                    Subir Momento
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {moments.length > 0 ? (
+                                moments.map(moment => (
+                                    <MomentCard key={moment.id} moment={moment} currentUser={currentUser} />
+                                ))
+                            ) : (
+                                <div className="col-span-full text-center py-8 bg-stone-900/40 rounded-lg border border-stone-800 border-dashed">
+                                    <p className="text-stone-500 text-sm italic">Aún no hay momentos épicos.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+            {
+        currentUser && (
+            <UploadMomentModal
+                isOpen={isUploadModalOpen}
+                onClose={() => setIsUploadModalOpen(false)}
+                onUploadComplete={fetchMoments}
+                currentUserId={currentUser.id}
+            />
+        )
+    }
+        </div >
+
     );
 };

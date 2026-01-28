@@ -6,9 +6,10 @@ import { Footer } from './Footer';
 
 import { BadgeManager } from './BadgeManager';
 import { RoleManager } from './RoleManager';
+import { TournamentManager } from './TournamentManager';
 
 export const AdminPanel: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'users' | 'badges' | 'roles'>('users');
+    const [activeTab, setActiveTab] = useState<'users' | 'badges' | 'roles' | 'tournaments'>('users');
     const [filter, setFilter] = useState<'all' | 'candidate' | 'member'>('all');
     const [search, setSearch] = useState('');
     const [users, setUsers] = useState<UserProfile[]>([]);
@@ -100,7 +101,7 @@ export const AdminPanel: React.FC = () => {
         <div className="min-h-screen bg-stone-950 text-gray-200">
             <Navbar />
 
-            <main className="max-w-7xl mx-auto px-6 py-12">
+            <main className="max-w-7xl mx-auto px-6 pt-32 pb-12">
                 <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-10 gap-4">
                     <div>
                         <h1 className="text-3xl font-serif font-bold text-white flex items-center gap-3">
@@ -131,6 +132,13 @@ export const AdminPanel: React.FC = () => {
                                 }`}
                         >
                             Insignias
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('tournaments')}
+                            className={`px-4 py-2 rounded-md font-medium transition-all ${activeTab === 'tournaments' ? 'bg-stone-800 text-white shadow-sm' : 'text-stone-400 hover:text-white'
+                                }`}
+                        >
+                            Torneos
                         </button>
                     </div>
                 </div>
@@ -273,6 +281,8 @@ export const AdminPanel: React.FC = () => {
                     </>
                 ) : activeTab === 'roles' ? (
                     <RoleManager />
+                ) : activeTab === 'tournaments' ? (
+                    <TournamentManager />
                 ) : (
                     <BadgeManager />
                 )}

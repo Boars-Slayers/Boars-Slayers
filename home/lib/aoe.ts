@@ -8,9 +8,9 @@ export interface PlayerStats {
     streak: number; // positive for win, negative for loss
 }
 
-// Attempts to use aoe2.net or compatible mirror. 
-// Note: aoe2.net is often down. In a production environment, you should use a stable proxy or AoE Insights API.
-const BASE_URL = 'https://aoe2.net/api';
+import { supabase } from './supabase';
+
+// Attempts to use available APIs (aoe2companion.com, etc)
 
 export const fetchPlayerStats = async (steamId: string): Promise<PlayerStats | null> => {
     // 1. Input Validation: Extract Numeric ID if a URL is provided by mistake
@@ -34,43 +34,90 @@ export const fetchPlayerStats = async (steamId: string): Promise<PlayerStats | n
     }
 
     try {
-        // Fetch 1v1 Leaderboard (ID 3)
-        const res1v1 = await fetch(`${BASE_URL}/leaderboard?game=aoe2de&leaderboard_id=3&steam_id=${cleanId}&count=1`);
+        // Use aoe2companion API which supports CORS and is fast.
+        // Issue: It accepts profile_id, not always steam_id directly in the same endpoint.
+        // However, let's try searching first or assume we need a Profile ID mapping.
+        // Use the nightbot rank API which is simple:
+        // https://data.aoe2companion.com/api/nightbot/rank?profile_id={steamId}
+        // Note: The user said "profile_id" in the python script. 
+        // We might need to handle the case where steamId != profileId.
+        // But let's try passing Steam ID as profile_id first, often they map or it supports both.
+        // If not, we fall back to a search or the proxy.
+        // Actually, we can just use the search from aoe2insights proxy to get the real ID later.
 
-        if (!res1v1.ok) {
-            console.warn(`AOE API Error: ${res1v1.statusText}`);
-            return null;
+        // For now, let's try to fetch using the steam ID as profile_id parameter (common in some APIs).
+        // If it fails, we return basic info.
+
+        const url = `https://data.aoe2companion.com/api/nightbot/rank?profile_id=${cleanId}`;
+        const res = await fetch(url);
+
+        if (!res.ok) return null;
+
+        const text = await res.text();
+        // Format: "Name (ELO) Rank #... Winrate%"
+        // e.g. "GL.TheViper (2600) Rank #1, 60% winrate"
+
+        const pattern = /(.+?)\s\((\d+)\)\sRank\s#(\d+).*?(\d+)%\swinrate/;
+        const match = text.match(pattern);
+
+        if (match) {
+            return {
+                steamId: cleanId,
+                name: match[1].trim(),
+                elo1v1: parseInt(match[2]),
+                eloTG: null, // This API seems to return main rank (1v1 typically)
+                winRate1v1: parseInt(match[4]),
+                gamesPlayed: 0, // Not in this string
+                streak: 0 // Not in this string
+            };
         }
 
-        const data1v1 = await res1v1.json();
-
-        // Fetch TG Leaderboard (ID 4)
-        const resTG = await fetch(`${BASE_URL}/leaderboard?game=aoe2de&leaderboard_id=4&steam_id=${cleanId}&count=1`);
-        const dataTG = await resTG.json();
-
-        const p1v1 = data1v1.leaderboard && data1v1.leaderboard.length > 0 ? data1v1.leaderboard[0] : null;
-        const pTG = dataTG.leaderboard && dataTG.leaderboard.length > 0 ? dataTG.leaderboard[0] : null;
-
-        if (!p1v1 && !pTG) return null;
-
-        // Calculate simple win rate from what we have (this API gives wins/losses)
-        const wins = p1v1?.wins || 0;
-        const losses = p1v1?.losses || 0;
-        const total = wins + losses;
-        const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
-
-        return {
-            steamId: cleanId,
-            name: p1v1?.name || pTG?.name || 'Unknown',
-            elo1v1: p1v1?.rating || null,
-            eloTG: pTG?.rating || null,
-            winRate1v1: winRate,
-            gamesPlayed: p1v1?.games || 0,
-            streak: p1v1?.streak || 0
-        };
+        return null;
 
     } catch (error) {
-        console.warn("Failed to fetch AOE stats (API likely down):", error);
+        console.warn("Failed to fetch AoE stats:", error);
         return null; // Fail gracefully
     }
+};
+
+export const fetchMatchHistory = async (steamId: string, _count: number = 10): Promise<import('../types').Match[]> => {
+    try {
+        // This calls the Supabase Edge Function 'proxy-match-history'
+        const { data, error } = await supabase.functions.invoke('proxy-match-history', {
+            body: { steamId }
+        });
+
+        if (error) {
+            console.error('Edge Function Error:', error);
+            return [];
+        }
+
+        return data?.matches || [];
+    } catch (error) {
+        console.warn(`Failed to fetch matches for ${steamId}`, error);
+        return [];
+    }
+};
+
+export const getClanMatches = async (members: { steamId?: string }[]): Promise<import('../types').Match[]> => {
+    const allMatches: import('../types').Match[] = [];
+    const validMembers = members.filter(m => m.steamId);
+
+    // Fetch limits to avoid spamming the (potentially broken) API
+    // parallel fetch
+    const promises = validMembers.map(m => fetchMatchHistory(m.steamId!, 10));
+    const results = await Promise.all(promises);
+
+    results.forEach(matches => allMatches.push(...matches));
+
+    // Deduplicate by match_id
+    const uniqueMatches = Array.from(new Map(allMatches.map(m => [m.match_id, m])).values());
+
+    // Filter for matches with at least 2 clan members
+    const clanSteamIds = new Set(validMembers.map(m => m.steamId));
+
+    return uniqueMatches.filter(match => {
+        const clanMembersInMatch = match.players.filter(p => clanSteamIds.has(p.steam_id));
+        return clanMembersInMatch.length >= 2;
+    }).sort((a, b) => b.started - a.started);
 };

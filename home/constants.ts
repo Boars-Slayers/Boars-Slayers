@@ -27,6 +27,7 @@ export const NAV_ITEMS = [
     label: 'Comunidad',
     href: '#',
     children: [
+      { label: 'Ranking & Historial', href: '/ranking' },
       { label: 'Torneos', href: '/tournaments' },
       { label: 'Showmatchs', href: '/showmatchs' },
       { label: 'Momentos', href: '/moments' },

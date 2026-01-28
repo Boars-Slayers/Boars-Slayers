@@ -5,12 +5,22 @@ import { ExternalLink, MessageSquare, ArrowLeft, Loader2, Award, Swords, Trendin
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { fetchPlayerStats, PlayerStats } from '../lib/aoe';
+import { useAuth } from '../AuthContext';
+import { Moment } from '../types';
+import { MomentCard } from './Moments/MomentCard';
+import { UploadMomentModal } from './Moments/UploadMomentModal';
+import { ImageIcon } from 'lucide-react';
+
 
 export const ProfilePage: React.FC = () => {
     const { username } = useParams<{ username: string }>();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [stats, setStats] = useState<PlayerStats | null>(null);
     const [loading, setLoading] = useState(true);
+    const { user: currentUser } = useAuth();
+    const [moments, setMoments] = useState<Moment[]>([]);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -28,11 +38,55 @@ export const ProfilePage: React.FC = () => {
                     const aoeData = await fetchPlayerStats(data.steam_id);
                     setStats(aoeData);
                 }
+
+                // Fetch Moments
+                fetchMoments(data.id);
             }
             setLoading(false);
         };
         if (username) fetchProfile();
     }, [username]);
+
+    const fetchMoments = async (userId: string) => {
+        try {
+            // Fetch moments uploaded by the user
+            const { data: uploadedMoments } = await supabase
+                .from('moments')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+
+            // Fetch moments where the user is tagged
+            const { data: taggedData } = await supabase
+                .from('moment_tags')
+                .select('moment_id')
+                .eq('user_id', userId);
+
+            let allMoments = uploadedMoments || [];
+
+            if (taggedData && taggedData.length > 0) {
+                const momentIds = taggedData.map(t => t.moment_id);
+                const { data: taggedMoments } = await supabase
+                    .from('moments')
+                    .select('*')
+                    .in('id', momentIds)
+                    .order('created_at', { ascending: false });
+
+                if (taggedMoments) {
+                    const combined = [...allMoments, ...taggedMoments];
+                    const uniqueMap = new Map();
+                    combined.forEach(m => uniqueMap.set(m.id, m));
+                    allMoments = Array.from(uniqueMap.values()).sort((a, b) =>
+                        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    );
+                }
+            }
+            setMoments(allMoments);
+        } catch (error) {
+            console.error('Error fetching moments:', error);
+        }
+    };
+
 
     if (loading) {
         return (
@@ -101,6 +155,36 @@ export const ProfilePage: React.FC = () => {
                         <p className="text-stone-300 leading-relaxed whitespace-pre-wrap">{profile.reason || 'Este guerrero aún no ha compartido su motivación para unirse al clan.'}</p>
                     </div>
 
+                    {/* Moments Section */}
+                    <div className="bg-stone-900/50 border border-white/5 rounded-2xl p-8 backdrop-blur-sm">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-serif font-bold text-white flex items-center gap-2">
+                                <ImageIcon className="text-gold-500" size={20} /> Momentos Épicos
+                            </h3>
+                            {currentUser && profile && currentUser.id === profile.id && (
+                                <button
+                                    onClick={() => setIsUploadModalOpen(true)}
+                                    className="text-xs bg-gold-600/20 hover:bg-gold-600/40 text-gold-400 px-3 py-1 rounded border border-gold-600/30 transition-colors font-bold uppercase tracking-wider"
+                                >
+                                    Subir Momento
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {moments.length > 0 ? (
+                                moments.map(moment => (
+                                    <MomentCard key={moment.id} moment={moment} currentUser={currentUser} />
+                                ))
+                            ) : (
+                                <div className="col-span-full text-center py-10 bg-black/20 rounded-xl border border-white/5 border-dashed">
+                                    <p className="text-stone-500 italic">Aún no hay momentos registrados en las crónicas.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+
                     {/* Placeholder for future API integration */}
                     <div className="bg-stone-900/50 border border-white/5 rounded-2xl p-8 backdrop-blur-sm opacity-50 cursor-not-allowed">
                         <div className="flex items-center justify-between mb-6">
@@ -139,7 +223,16 @@ export const ProfilePage: React.FC = () => {
                 </div>
             </main>
             <Footer />
+            {currentUser && profile && (
+                <UploadMomentModal
+                    isOpen={isUploadModalOpen}
+                    onClose={() => setIsUploadModalOpen(false)}
+                    onUploadComplete={() => fetchMoments(profile.id)}
+                    currentUserId={currentUser.id}
+                />
+            )}
         </div>
+
     );
 };
 

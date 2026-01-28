@@ -34,3 +34,38 @@ export interface Tournament {
   // joined fields
   participants_count?: number;
 }
+
+export interface Match {
+  match_id: string;
+  name: string; // Map name or Lobby name
+  started: number; // Timestamp
+  finished: number | null;
+  players: {
+    steam_id: string;
+    name: string;
+    civ: number;
+    won: boolean;
+    team: number | null;
+  }[];
+  ranked: boolean;
+  result?: 'Victory' | 'Defeat';
+  duration?: string;
+  date_text?: string;
+  type?: string;
+}
+
+export interface Moment {
+  id: string;
+  user_id: string;
+  media_url: string;
+  media_type: 'image' | 'video';
+  description?: string;
+  created_at: string;
+}
+
+export interface MomentTag {
+  id: string;
+  moment_id: string;
+  user_id: string;
+  created_at: string;
+}
