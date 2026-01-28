@@ -31,6 +31,7 @@ export const NAV_ITEMS = [
       { label: 'Torneos', href: '/tournaments' },
       { label: 'Showmatchs', href: '/showmatchs' },
       { label: 'Momentos', href: '/moments' },
+      { label: 'Ágora / Debates', href: '/comunidad/debates' },
     ]
   },
 ];

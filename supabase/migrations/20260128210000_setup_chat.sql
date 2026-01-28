@@ -39,9 +39,9 @@ DO $$ BEGIN
     USING ( auth.uid() = user_id OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin') );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- 3. Habilitar Realtime para esta tabla (puedes fallar si la publicación no existe en este entorno)
--- DO $$ BEGIN
---   ALTER PUBLICATION supabase_realtime ADD TABLE clan_messages;
--- EXCEPTION WHEN others THEN 
---   RAISE NOTICE 'No se pudo habilitar realtime automáticamente. Asegúrate de activarlo en el Dashboard de Supabase.';
--- END $$;
+-- 3. Habilitar Realtime para esta tabla
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE clan_messages;
+EXCEPTION WHEN others THEN 
+  RAISE NOTICE 'No se pudo habilitar realtime automáticamente. Asegúrate de activarlo en el Dashboard de Supabase.';
+END $$;

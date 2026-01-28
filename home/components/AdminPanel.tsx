@@ -21,6 +21,36 @@ export const AdminPanel: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [editingBadgesUser, setEditingBadgesUser] = useState<{ id: string, username: string } | null>(null);
     const [isCreatingUser, setIsCreatingUser] = useState(false);
+    const [editingNicknameUser, setEditingNicknameUser] = useState<{ id: string, username: string, currentNickname?: string } | null>(null);
+    const [nicknameInput, setNicknameInput] = useState('');
+
+    const handleNicknameClick = (user: UserProfile) => {
+        setEditingNicknameUser({
+            id: user.id,
+            username: user.username,
+            currentNickname: (user as any).nickname
+        });
+        setNicknameInput((user as any).nickname || '');
+    };
+
+    const saveNickname = async () => {
+        if (!editingNicknameUser) return;
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ pending_nickname: nicknameInput })
+            .eq('id', editingNicknameUser.id);
+
+        if (error) {
+            console.error('Error updating nickname:', error);
+            alert('Error al proponer apodo');
+        } else {
+            setEditingNicknameUser(null);
+            alert('Apodo propuesto correctamente. El usuario deberá aceptarlo.');
+        }
+    };
+
+
 
     const fetchData = async () => {
         setLoading(true);
@@ -360,15 +390,20 @@ export const AdminPanel: React.FC = () => {
                                                                     </button>
                                                                 )}
 
-                                                                {user.role !== 'candidate' && (
-                                                                    <button
-                                                                        onClick={() => setEditingBadgesUser({ id: user.id, username: user.username })}
-                                                                        title="Gestionar Insignias"
-                                                                        className="p-2 bg-gold-900/20 text-gold-500 hover:bg-gold-900/40 rounded-lg border border-gold-800/50 transition-colors"
-                                                                    >
-                                                                        <Award size={18} />
-                                                                    </button>
-                                                                )}
+                                                                <button
+                                                                    onClick={() => handleNicknameClick(user)}
+                                                                    title="Proponer Apodo"
+                                                                    className="p-2 ml-2 bg-purple-900/20 text-purple-500 hover:bg-purple-900/40 rounded-lg border border-purple-800/50 transition-colors"
+                                                                >
+                                                                    <Settings size={18} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setEditingBadgesUser({ id: user.id, username: user.username })}
+                                                                    title="Gestionar Insignias"
+                                                                    className="p-2 ml-2 bg-gold-900/20 text-gold-500 hover:bg-gold-900/40 rounded-lg border border-gold-800/50 transition-colors"
+                                                                >
+                                                                    <Award size={18} />
+                                                                </button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -405,6 +440,41 @@ export const AdminPanel: React.FC = () => {
                         onClose={() => setIsCreatingUser(false)}
                         onUserCreated={() => fetchData()}
                     />
+                )}
+                {/* Nickname Modal */}
+                {editingNicknameUser && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                        <div className="bg-stone-900 border border-stone-800 rounded-xl p-6 w-full max-w-md animate-in fade-in zoom-in-95">
+                            <h3 className="text-xl font-bold text-white mb-4">Proponer Apodo para {editingNicknameUser.username}</h3>
+                            <p className="text-stone-400 text-sm mb-4">
+                                El usuario recibirá una notificación para aceptar o rechazar este apodo.
+                                {editingNicknameUser.currentNickname && <span> Actual: <span className="text-gold-500">{editingNicknameUser.currentNickname}</span></span>}
+                            </p>
+
+                            <input
+                                type="text"
+                                value={nicknameInput}
+                                onChange={(e) => setNicknameInput(e.target.value)}
+                                placeholder="Ej: El Destructor"
+                                className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-gold-500 outline-none mb-6"
+                            />
+
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => setEditingNicknameUser(null)}
+                                    className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={saveNickname}
+                                    className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-stone-950 font-bold rounded-lg transition-colors"
+                                >
+                                    Proponer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </main>
             <Footer />

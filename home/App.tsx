@@ -14,6 +14,8 @@ import { ShowmatchesPage } from './components/ShowmatchesPage';
 import { MomentsPage } from './components/MomentsPage';
 import { RankingPage } from './components/RankingPage';
 import { ClanChat } from './components/ClanChat';
+import { DebatesList } from './components/community/DebatesList';
+import { DebateDetail } from './components/community/DebateDetail';
 
 const HomePage: React.FC = () => {
   const { user, login, profile, refreshProfile } = useAuth();
@@ -105,6 +107,20 @@ const App: React.FC = () => {
           <div className="min-h-screen bg-stone-950 text-gray-200">
             <Navbar />
             <MomentsPage />
+            <Footer />
+          </div>
+        } />
+        <Route path="/comunidad/debates" element={
+          <div className="min-h-screen bg-stone-950 text-gray-200">
+            <Navbar />
+            <DebatesList />
+            <Footer />
+          </div>
+        } />
+        <Route path="/comunidad/debates/:id" element={
+          <div className="min-h-screen bg-stone-950 text-gray-200">
+            <Navbar />
+            <DebateDetail />
             <Footer />
           </div>
         } />

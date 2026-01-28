@@ -6,9 +6,10 @@ import { Tag, Calendar } from 'lucide-react';
 interface MomentCardProps {
     moment: Moment;
     currentUser: any; // Context auth user
+    onClick?: () => void;
 }
 
-export const MomentCard: React.FC<MomentCardProps> = ({ moment }) => {
+export const MomentCard: React.FC<MomentCardProps> = ({ moment, onClick }) => {
     const [taggedUsers, setTaggedUsers] = useState<Member[]>([]);
 
     useEffect(() => {
@@ -62,13 +63,22 @@ export const MomentCard: React.FC<MomentCardProps> = ({ moment }) => {
 
     return (
         <div className="bg-stone-900/80 border border-gold-600/20 rounded-xl overflow-hidden shadow-lg hover:border-gold-600/40 transition-all group">
-            <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
+            <div
+                className="relative aspect-video bg-black flex items-center justify-center overflow-hidden cursor-pointer"
+                onClick={onClick}
+            >
                 {moment.media_type === 'video' ? (
-                    <video
-                        src={moment.media_url}
-                        controls
-                        className="w-full h-full object-contain"
-                    />
+                    <div className="relative w-full h-full group-hover:opacity-90 transition-opacity">
+                        <video
+                            src={moment.media_url}
+                            className="w-full h-full object-contain pointer-events-none"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+                            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
+                                <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
+                            </div>
+                        </div>
+                    </div>
                 ) : (
                     <img
                         src={moment.media_url}

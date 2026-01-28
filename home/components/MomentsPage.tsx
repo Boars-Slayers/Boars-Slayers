@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Moment } from '../types';
-import { ImageIcon, Loader2 } from 'lucide-react';
+import { ImageIcon, Loader2, X } from 'lucide-react';
 import { MomentCard } from './Moments/MomentCard';
 import { useAuth } from '../AuthContext';
 
 export const MomentsPage: React.FC = () => {
     const [moments, setMoments] = useState<Moment[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null);
     const { user } = useAuth();
 
     useEffect(() => {
@@ -52,11 +53,55 @@ export const MomentsPage: React.FC = () => {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {moments.map((moment) => (
-                            <MomentCard key={moment.id} moment={moment} currentUser={user} />
+                            <MomentCard
+                                key={moment.id}
+                                moment={moment}
+                                currentUser={user}
+                                onClick={() => setSelectedMoment(moment)}
+                            />
                         ))}
                     </div>
                 )}
             </main>
+
+            {/* Media Modal */}
+            {selectedMoment && (
+                <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex flex-col animate-in fade-in duration-200">
+                    <button
+                        onClick={() => setSelectedMoment(null)}
+                        className="absolute top-4 right-4 z-50 p-2 bg-black/50 hover:bg-white/20 rounded-full text-white transition-colors"
+                    >
+                        <X size={32} />
+                    </button>
+
+                    <div className="flex-1 flex items-center justify-center p-4 overflow-hidden" onClick={() => setSelectedMoment(null)}>
+                        <div className="relative max-w-full max-h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+                            {selectedMoment.media_type === 'video' ? (
+                                <video
+                                    src={selectedMoment.media_url}
+                                    controls
+                                    autoPlay
+                                    className="max-w-full max-h-[90vh] rounded-lg shadow-2xl border border-white/10"
+                                />
+                            ) : (
+                                <img
+                                    src={selectedMoment.media_url}
+                                    alt="Full view"
+                                    className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl border border-white/10"
+                                />
+                            )}
+
+                            {selectedMoment.description && (
+                                <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
+                                    <p className="inline-block bg-black/60 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-serif italic border border-white/10 shadow-lg">
+                                        "{selectedMoment.description}"
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

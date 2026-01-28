@@ -185,6 +185,49 @@ export const ProfilePage: React.FC = () => {
                 </div>
             </div>
 
+            {/* Nickname Proposal Banner */}
+            {currentUser && profile && currentUser.id === profile.id && (profile as any).pending_nickname && (
+                <div className="bg-gradient-to-r from-purple-900/90 to-blue-900/90 border-y border-purple-500/30 text-white px-6 py-4 relative z-20 backdrop-blur-md">
+                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-purple-500/20 p-2 rounded-full border border-purple-500/50">
+                                <Award size={20} className="text-purple-300" />
+                            </div>
+                            <div>
+                                <p className="font-bold text-lg">¡Nuevo Apodo Propuesto!</p>
+                                <p className="text-purple-200 text-sm">
+                                    Los líderes del clan te han otorgado el título: <span className="font-black text-white text-lg ml-1">"{(profile as any).pending_nickname}"</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={async () => {
+                                    if (confirm('¿Aceptas este apodo?')) {
+                                        const { error } = await supabase.from('profiles').update({ nickname: (profile as any).pending_nickname, pending_nickname: null }).eq('id', profile.id);
+                                        if (!error) window.location.reload();
+                                    }
+                                }}
+                                className="px-6 py-2 bg-white text-purple-900 font-black uppercase tracking-widest text-xs rounded hover:bg-purple-100 transition-colors shadow-lg"
+                            >
+                                Aceptar Honor
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    if (confirm('¿Rechazas este apodo?')) {
+                                        const { error } = await supabase.from('profiles').update({ pending_nickname: null }).eq('id', profile.id);
+                                        if (!error) window.location.reload();
+                                    }
+                                }}
+                                className="px-6 py-2 bg-black/30 hover:bg-black/50 text-white font-bold uppercase tracking-widest text-xs rounded border border-white/20 transition-colors"
+                            >
+                                Rechazar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <main className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Stats Section */}
                 <div className="lg:col-span-2 space-y-8">

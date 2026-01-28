@@ -22,20 +22,42 @@ serve(async (req) => {
 
         // 1. Resolve Profile ID from Steam ID via Search Redirect
         const searchUrl = `https://www.aoe2insights.com/?q=${steamId}`;
-        const searchRes = await fetch(searchUrl, { redirect: 'follow' });
-        const finalUrl = searchRes.url;
+        const searchRes = await fetch(searchUrl, {
+            redirect: 'follow',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
 
+        let finalUrl = searchRes.url;
         console.log(`Resolved URL: ${finalUrl}`);
 
+        let profileId = null;
         const profileIdMatch = finalUrl.match(/\/user\/(\d+)/);
-        if (!profileIdMatch) {
+
+        if (profileIdMatch) {
+            profileId = profileIdMatch[1];
+        } else {
+            // If No redirect, parse the results page
+            console.log("No direct redirect, trying to parse search results...");
+            const searchHtml = await searchRes.text();
+            const searchDoc = new DOMParser().parseFromString(searchHtml, "text/html");
+            // Find first user link in search results
+            const firstUserLink = searchDoc?.querySelector('a[href*="/user/"]');
+            const href = firstUserLink?.getAttribute('href');
+            if (href) {
+                const match = href.match(/\/user\/(\d+)/);
+                if (match) profileId = match[1];
+            }
+        }
+
+        if (!profileId) {
             console.log("Could not resolve specific user profile from search.");
             return new Response(JSON.stringify({ error: 'User not found', matches: [] }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
         }
 
-        const profileId = profileIdMatch[1];
         const profileUrl = `https://www.aoe2insights.com/user/${profileId}/`;
 
         // 2. Fetch Profile Page for Stats

@@ -9,10 +9,21 @@ export const TournamentManager: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [currentTournament, setCurrentTournament] = useState<Partial<Tournament>>({});
+    const [participants, setParticipants] = useState<any[]>([]);
+    const [allProfiles, setAllProfiles] = useState<any[]>([]);
+    const [memberSearch, setMemberSearch] = useState('');
+    const [participantLoading, setParticipantLoading] = useState(false);
 
     useEffect(() => {
         fetchTournaments();
     }, []);
+
+    useEffect(() => {
+        if (isEditing && currentTournament.id) {
+            fetchParticipants(currentTournament.id);
+            fetchProfiles();
+        }
+    }, [isEditing, currentTournament.id]);
 
     const fetchTournaments = async () => {
         setLoading(true);
@@ -27,6 +38,74 @@ export const TournamentManager: React.FC = () => {
             setTournaments(data || []);
         }
         setLoading(false);
+    };
+
+    const fetchParticipants = async (tournamentId: string) => {
+        setParticipantLoading(true);
+        const { data, error } = await supabase
+            .from('tournament_participants')
+            .select('*, user:profiles(id, username, avatar_url)')
+            .eq('tournament_id', tournamentId);
+
+        if (error) {
+            console.error('Error fetching participants:', error);
+        } else {
+            setParticipants(data || []);
+        }
+        setParticipantLoading(false);
+    };
+
+    const fetchProfiles = async () => {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url')
+            .neq('role', 'candidate');
+
+        if (error) {
+            console.error('Error fetching profiles:', error);
+        } else {
+            setAllProfiles(data || []);
+        }
+    };
+
+    const addParticipant = async (user_id: string) => {
+        if (!currentTournament.id) return;
+
+        const { error } = await supabase
+            .from('tournament_participants')
+            .insert([{
+                tournament_id: currentTournament.id,
+                user_id,
+                status: 'approved'
+            }]);
+
+        if (error) {
+            if (error.code === '23505') {
+                alert('Este usuario ya está en el torneo');
+            } else {
+                console.error('Error adding participant:', error);
+                alert('Error al agregar el participante');
+            }
+        } else {
+            fetchParticipants(currentTournament.id);
+            setMemberSearch('');
+        }
+    };
+
+    const removeParticipant = async (participantId: string) => {
+        if (!confirm('¿Quitar a este participante?')) return;
+
+        const { error } = await supabase
+            .from('tournament_participants')
+            .delete()
+            .eq('id', participantId);
+
+        if (error) {
+            console.error('Error removing participant:', error);
+            alert('Error al eliminar el participante');
+        } else {
+            setParticipants(participants.filter(p => p.id !== participantId));
+        }
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -333,6 +412,96 @@ export const TournamentManager: React.FC = () => {
                                 Visible públicamente (incluso sin estar logueado)
                             </label>
                         </div>
+
+                        {/* Manual Participant Management - Only for existing tournaments */}
+                        {currentTournament.id && (
+                            <div className="col-span-full mt-12 pt-8 border-t border-stone-800">
+                                <h4 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                                    <Users size={20} className="text-gold-500" />
+                                    Gestión de Participantes ({participants.length}/{currentTournament.max_participants})
+                                </h4>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* Participant List */}
+                                    <div className="space-y-4">
+                                        <p className="text-sm font-medium text-stone-400 mb-2 uppercase tracking-widest text-[10px]">Participantes Actuales</p>
+                                        <div className="bg-stone-950 border border-stone-800 rounded-xl overflow-hidden min-h-[100px]">
+                                            {participantLoading ? (
+                                                <div className="p-8 text-center text-stone-600 italic">Cargando...</div>
+                                            ) : participants.length === 0 ? (
+                                                <div className="p-8 text-center text-stone-600 italic text-sm">No hay participantes inscritos</div>
+                                            ) : (
+                                                <div className="divide-y divide-stone-900">
+                                                    {participants.map((p) => (
+                                                        <div key={p.id} className="flex items-center justify-between p-3 group hover:bg-stone-900/50 transition-colors">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-8 h-8 rounded-full overflow-hidden border border-stone-800 bg-stone-900">
+                                                                    {p.user?.avatar_url ? (
+                                                                        <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <div className="w-full h-full flex items-center justify-center text-stone-700 font-bold text-xs">?</div>
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-sm font-medium text-stone-200">{p.user?.username}</span>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => removeParticipant(p.id)}
+                                                                className="opacity-0 group-hover:opacity-100 p-1.5 text-stone-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                                                                title="Eliminar participante"
+                                                            >
+                                                                <X size={16} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Add Participant Search */}
+                                    <div className="space-y-4">
+                                        <p className="text-sm font-medium text-stone-400 mb-2 uppercase tracking-widest text-[10px]">Agregar Invitado</p>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={memberSearch}
+                                                onChange={e => setMemberSearch(e.target.value)}
+                                                placeholder="Buscar miembro del clan..."
+                                                className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-gold-500 outline-none text-sm"
+                                            />
+                                            {memberSearch && (
+                                                <div className="absolute top-full left-0 right-0 mt-2 bg-stone-900 border border-stone-800 rounded-xl shadow-2xl overflow-hidden z-20 max-h-48 overflow-y-auto">
+                                                    {allProfiles
+                                                        .filter(u => u.username.toLowerCase().includes(memberSearch.toLowerCase()))
+                                                        .filter(u => !participants.some(p => p.user_id === u.id))
+                                                        .slice(0, 5)
+                                                        .map(u => (
+                                                            <button
+                                                                key={u.id}
+                                                                onClick={() => addParticipant(u.id)}
+                                                                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-stone-800 text-stone-300 text-sm transition-colors text-left"
+                                                            >
+                                                                <div className="w-7 h-7 rounded-full overflow-hidden border border-stone-700 flex-shrink-0">
+                                                                    {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-stone-800" />}
+                                                                </div>
+                                                                {u.username}
+                                                                <Plus size={14} className="ml-auto text-gold-500" />
+                                                            </button>
+                                                        ))
+                                                    }
+                                                    {allProfiles.filter(u => u.username.toLowerCase().includes(memberSearch.toLowerCase()) && !participants.some(p => p.user_id === u.id)).length === 0 && (
+                                                        <div className="p-4 text-center text-stone-600 text-xs italic">No se encontraron miembros para invitar</div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            <p className="text-[10px] text-stone-600 mt-3 italic leading-relaxed">
+                                                Busca a un miembro para agregarlo directamente. Los participantes agregados manualmente aparecerán con estado "Aprobado".
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex justify-end gap-3 mt-8 border-t border-stone-800 pt-6">
@@ -417,7 +586,8 @@ export const TournamentManager: React.FC = () => {
                         ))
                     )}
                 </div>
-            )}
+            )
+            }
         </div>
     );
 };

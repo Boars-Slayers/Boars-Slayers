@@ -7,6 +7,8 @@ export interface Member {
   avatarUrl: string; // This will point to your local PNG eventually
   favoriteCiv?: string;
   steamId?: string;
+  nickname?: string;
+  pending_nickname?: string;
 }
 
 export interface NavItem {
