@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
-import { UserCheck, UserX, Shield, Clock, RefreshCw, ExternalLink } from 'lucide-react';
+import { UserCheck, UserX, Shield, Clock, RefreshCw, ExternalLink, Mail, Phone } from 'lucide-react';
 
 interface AdminPanelProps {
     onClose: () => void;
@@ -28,6 +28,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     }, []);
 
     const handleApprove = async (id: string) => {
+        const candidate = candidates.find(c => c.id === id);
+        if (!candidate) return;
+
         setActioningId(id);
         const { error } = await supabase
             .from('profiles')
@@ -35,6 +38,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
             .eq('id', id);
 
         if (!error) {
+            // Trigger Welcome Email
+            try {
+                await fetch('/api/send_email.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'MEMBER_APPROVED',
+                        data: {
+                            username: candidate.username,
+                            email: candidate.contact_email
+                        }
+                    })
+                });
+            } catch (err) {
+                console.error("Failed to send welcome email", err);
+            }
+
+            // Prompt Admin to send WhatsApp
+            if (candidate.phone_number) {
+                const cleanPhone = candidate.phone_number.replace(/\D/g, '');
+                const text = `¡Hola ${candidate.username}! Bienvenido a Boars Slayers. Tu solicitud ha sido aprobada. Por favor únete al grupo: https://chat.whatsapp.com/Dz0jyXt0SDX3Me12g3zBkk`;
+                window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
+            }
+
             setCandidates(candidates.filter(c => c.id !== id));
         }
         setActioningId(null);
@@ -139,7 +166,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                     {/* Recruitment Details */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 p-4 bg-black/40 rounded-lg border border-white/5">
                                         <div className="space-y-2">
-                                            <p className="text-[10px] text-gold-500 uppercase tracking-widest font-bold">Identidad de Batalla</p>
+                                            <p className="text-[10px] text-gold-500 uppercase tracking-widest font-bold">Contacto</p>
+                                            <div className="flex flex-col gap-1 text-xs">
+                                                <div className="flex items-center gap-2 text-stone-300">
+                                                    <Mail size={12} className="text-stone-500" />
+                                                    <span>{candidate.contact_email || 'No email'}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-stone-300">
+                                                    <Phone size={12} className="text-stone-500" />
+                                                    <span>{candidate.phone_number || 'No phone'}</span>
+                                                </div>
+                                            </div>
+
+                                            <p className="text-[10px] text-gold-500 uppercase tracking-widest font-bold mt-3">Identidad de Batalla</p>
                                             <div className="flex flex-wrap gap-2 text-xs">
                                                 <span className="px-2 py-1 bg-stone-800 rounded border border-stone-700 text-stone-300">
                                                     Steam: {candidate.steam_id || 'N/A'}

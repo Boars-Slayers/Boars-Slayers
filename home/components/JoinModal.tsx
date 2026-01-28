@@ -12,6 +12,8 @@ interface JoinModalProps {
 export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, onSuccess }) => {
     const [steamId, setSteamId] = useState(profile?.steam_id || '');
     const [aoeUrl, setAoeUrl] = useState(profile?.aoe_insights_url || '');
+    const [email, setEmail] = useState(profile?.contact_email || user?.email || '');
+    const [phone, setPhone] = useState(profile?.phone_number || '');
     const [reason, setReason] = useState(profile?.reason || '');
     const [accepted, setAccepted] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -28,13 +30,34 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
                 .update({
                     steam_id: steamId,
                     aoe_insights_url: aoeUrl,
+                    contact_email: email, // Changed from email to contact_email
+                    phone_number: phone,
                     reason: reason,
                     accepted_rules: true,
-                    role: 'candidate' // Ensure they are back to candidate for review
+                    role: 'candidate'
                 })
                 .eq('id', user.id);
 
             if (error) throw error;
+
+            // Send notification email to admin
+            try {
+                await fetch('/api/send_email.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'NEW_APPLICATION',
+                        data: {
+                            username: profile?.username || 'Unknown',
+                            email: email,
+                            reason: reason
+                        }
+                    })
+                });
+            } catch (err) {
+                console.error('Failed to send notification email', err);
+            }
+
             setSubmitted(true);
             onSuccess();
         } catch (error: any) {
@@ -107,6 +130,30 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
                             <a href="https://www.aoeinsights.com/" target="_blank" rel="noreferrer" className="text-[10px] text-gold-600 flex items-center gap-1 hover:underline">
                                 Buscar mi perfil <ExternalLink size={10} />
                             </a>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gold-500 uppercase tracking-widest px-1">Correo Electrónico</label>
+                            <input
+                                required
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="tu@email.com"
+                                className="w-full bg-stone-800 border border-stone-700 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gold-500 uppercase tracking-widest px-1">WhatsApp (Con indicativo)</label>
+                            <input
+                                required
+                                type="tel"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                placeholder="+57 300 123 4567"
+                                className="w-full bg-stone-800 border border-stone-700 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all"
+                            />
                         </div>
                     </div>
 

@@ -22,5 +22,7 @@ export interface UserProfile {
     aoe_insights_url?: string;
     reason?: string;
     accepted_rules?: boolean;
+    contact_email?: string;
+    phone_number?: string;
     created_at: string;
 }

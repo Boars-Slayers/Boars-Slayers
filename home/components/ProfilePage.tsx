@@ -4,10 +4,12 @@ import { supabase, UserProfile } from '../lib/supabase';
 import { ExternalLink, MessageSquare, ArrowLeft, Loader2, Award, Swords, TrendingUp } from 'lucide-react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
+import { fetchPlayerStats, PlayerStats } from '../lib/aoe';
 
 export const ProfilePage: React.FC = () => {
     const { username } = useParams<{ username: string }>();
     const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [stats, setStats] = useState<PlayerStats | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -19,7 +21,14 @@ export const ProfilePage: React.FC = () => {
                 .eq('username', username)
                 .single();
 
-            if (!error) setProfile(data);
+            if (!error && data) {
+                setProfile(data);
+                // Fetch AOE Stats if Steam ID exists
+                if (data.steam_id) {
+                    const aoeData = await fetchPlayerStats(data.steam_id);
+                    setStats(aoeData);
+                }
+            }
             setLoading(false);
         };
         if (username) fetchProfile();
@@ -80,9 +89,9 @@ export const ProfilePage: React.FC = () => {
                 {/* Stats Section */}
                 <div className="lg:col-span-2 space-y-8">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        <StatCard icon={<Swords className="text-emerald-500" />} label="Victorias" value="--" />
-                        <StatCard icon={<TrendingUp className="text-gold-500" />} label="ELO" value="--" />
-                        <StatCard icon={<Award className="text-purple-500" />} label="Civilización" value={profile.favorite_civ || '--'} />
+                        <StatCard icon={<Swords className="text-emerald-500" />} label="Win Rate" value={stats ? `${stats.winRate1v1}%` : '--'} />
+                        <StatCard icon={<TrendingUp className="text-gold-500" />} label="ELO (1v1)" value={stats?.elo1v1 ? stats.elo1v1.toString() : '--'} />
+                        <StatCard icon={<Award className="text-purple-500" />} label="ELO (TG)" value={stats?.eloTG ? stats.eloTG.toString() : '--'} />
                     </div>
 
                     <div className="bg-stone-900/50 border border-white/5 rounded-2xl p-8 backdrop-blur-sm">
@@ -113,6 +122,8 @@ export const ProfilePage: React.FC = () => {
                         <div className="space-y-4">
                             <InfoRow label="Steam ID" value={profile.steam_id || 'Oculto'} />
                             <InfoRow label="Miembro desde" value={new Date(profile.created_at).toLocaleDateString()} />
+                            {stats && <InfoRow label="Partidas" value={stats.gamesPlayed.toString()} />}
+
                             {profile.aoe_insights_url && (
                                 <a
                                     href={profile.aoe_insights_url}
