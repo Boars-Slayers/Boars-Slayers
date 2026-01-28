@@ -9,13 +9,22 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
 
-export type UserRole = 'admin' | 'member' | 'candidate';
+// Role is now dynamic, but we keep these types for reference/default logic
+export type UserRole = string;
+
+export interface ClanRole {
+    id: string;
+    name: string;
+    color: string;
+    created_at: string;
+}
 
 export interface UserProfile {
     id: string;
     username: string;
     avatar_url: string;
     steam_id: string;
+    discord_id: string;
     role: UserRole;
     bio?: string;
     favorite_civ?: string;

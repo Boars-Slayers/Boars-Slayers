@@ -64,9 +64,10 @@ export const MembersSection: React.FC = () => {
                 member={{
                   id: m.id,
                   name: m.username,
-                  role: m.role === 'admin' ? 'Leader' : 'Member',
+                  role: m.role.charAt(0).toUpperCase() + m.role.slice(1),
                   avatarUrl: m.avatar_url,
-                  favoriteCiv: m.favorite_civ
+                  favoriteCiv: m.favorite_civ,
+                  steamId: m.steam_id
                 }}
                 onClick={() => handleMemberClick(m)}
               />
@@ -81,9 +82,10 @@ export const MembersSection: React.FC = () => {
           member={{
             id: selectedMember.id,
             name: selectedMember.username,
-            role: selectedMember.role === 'admin' ? 'Leader' : 'Member',
+            role: selectedMember.role.charAt(0).toUpperCase() + selectedMember.role.slice(1),
             avatarUrl: selectedMember.avatar_url,
-            favoriteCiv: selectedMember.favorite_civ
+            favoriteCiv: selectedMember.favorite_civ,
+            steamId: selectedMember.steam_id
           }}
           onViewProfile={() => {
             navigate(`/user/${selectedMember.username}`);

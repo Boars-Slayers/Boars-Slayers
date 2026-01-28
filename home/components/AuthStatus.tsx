@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { LogIn, LogOut, User, Settings } from 'lucide-react';
-import { AdminPanel } from './AdminPanel';
+import { useNavigate } from 'react-router-dom';
 import { ProfileEditor } from './ProfileEditor';
 import { useAuth } from '../AuthContext';
 
 export const AuthStatus: React.FC = () => {
     const { user, profile, loading, login, logout, refreshProfile } = useAuth();
-    const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+    const navigate = useNavigate();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     if (loading) return <div className="text-gold-500 text-sm">Cargando...</div>;
@@ -29,7 +29,7 @@ export const AuthStatus: React.FC = () => {
                 <div className="text-right hidden sm:block">
                     <p className="text-gray-200 font-bold text-sm tracking-wide">{profile?.username || user.email}</p>
                     <p className="text-xs uppercase tracking-widest text-gold-500 font-bold">
-                        {profile?.role === 'admin' ? 'Fundador' : profile?.role === 'member' ? 'Guerrero' : 'Recluta'}
+                        {profile?.role ? (profile.role.charAt(0).toUpperCase() + profile.role.slice(1)) : 'Recluta'}
                     </p>
                 </div>
 
@@ -50,7 +50,7 @@ export const AuthStatus: React.FC = () => {
                             </button>
                             {profile?.role === 'admin' && (
                                 <button
-                                    onClick={() => setIsAdminPanelOpen(true)}
+                                    onClick={() => navigate('/admin')}
                                     className="flex items-center gap-2 w-full px-3 py-2 text-sm text-emerald-400 hover:bg-emerald-900/20 rounded transition-colors text-left"
                                 >
                                     <Settings size={16} /> Admin Panel
@@ -68,9 +68,7 @@ export const AuthStatus: React.FC = () => {
                 </div>
             </div>
 
-            {isAdminPanelOpen && (
-                <AdminPanel onClose={() => setIsAdminPanelOpen(false)} />
-            )}
+
 
             {isProfileOpen && profile && (
                 <ProfileEditor

@@ -3,7 +3,7 @@ import { Member } from './types';
 // Helper to generate a placeholder PNG-like URL
 // When you have the real files, simply replace these URLs with local paths like:
 // avatarUrl: "/images/gabriel.png"
-const getPlaceholder = (name: string) => 
+const getPlaceholder = (name: string) =>
   `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1f1f22&color=d97706&size=256&font-size=0.33&format=png`;
 
 export const CLAN_MEMBERS: Member[] = [
@@ -23,5 +23,14 @@ export const CLAN_MEMBERS: Member[] = [
 export const NAV_ITEMS = [
   { label: 'Inicio', href: '#hero' },
   { label: 'Miembros', href: '#members' },
+  {
+    label: 'Comunidad',
+    href: '#',
+    children: [
+      { label: 'Torneos', href: '/tournaments' },
+      { label: 'Showmatchs', href: '/showmatchs' },
+      { label: 'Momentos', href: '/moments' },
+    ]
+  },
   { label: 'Sobre Nosotros', href: '#about' },
 ];

@@ -1,223 +1,298 @@
-import React, { useState, useEffect } from 'react';
-import { supabase, UserProfile } from '../lib/supabase';
-import { UserCheck, UserX, Shield, Clock, RefreshCw, ExternalLink, Mail, Phone } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { supabase, UserProfile, ClanRole } from '../lib/supabase';
+import { Shield, Check, X, Search, Loader2, UserX, Settings } from 'lucide-react';
+import { Navbar } from './Navbar';
+import { Footer } from './Footer';
 
-interface AdminPanelProps {
-    onClose: () => void;
-}
+import { BadgeManager } from './BadgeManager';
+import { RoleManager } from './RoleManager';
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
-    const [candidates, setCandidates] = useState<UserProfile[]>([]);
+export const AdminPanel: React.FC = () => {
+    const [activeTab, setActiveTab] = useState<'users' | 'badges' | 'roles'>('users');
+    const [filter, setFilter] = useState<'all' | 'candidate' | 'member'>('all');
+    const [search, setSearch] = useState('');
+    const [users, setUsers] = useState<UserProfile[]>([]);
+    const [roles, setRoles] = useState<ClanRole[]>([]);
     const [loading, setLoading] = useState(true);
-    const [actioningId, setActioningId] = useState<string | null>(null);
 
-    const fetchCandidates = async () => {
+    const fetchData = async () => {
         setLoading(true);
-        const { data, error } = await supabase
+
+        // Fetch users
+        const { data: usersData, error: usersError } = await supabase
             .from('profiles')
             .select('*')
-            .eq('role', 'candidate')
             .order('created_at', { ascending: false });
 
-        if (!error) setCandidates(data || []);
+        if (!usersError && usersData) {
+            setUsers(usersData);
+        }
+
+        // Fetch roles (if table exists)
+        const { data: rolesData, error: rolesError } = await supabase
+            .from('clan_roles')
+            .select('*')
+            .order('name');
+
+        if (!rolesError && rolesData) {
+            setRoles(rolesData);
+        } else if (rolesError) {
+            console.warn("Could not fetch roles (maybe table doesn't exist yet)", rolesError);
+        }
+
         setLoading(false);
     };
 
     useEffect(() => {
-        fetchCandidates();
-    }, []);
+        // Refresh when switching to users tab or initially
+        if (activeTab === 'users' || activeTab === 'roles') {
+            fetchData();
+        }
+    }, [activeTab]);
 
-    const handleApprove = async (id: string) => {
-        const candidate = candidates.find(c => c.id === id);
-        if (!candidate) return;
-
-        setActioningId(id);
+    const handleRoleUpdate = async (userId: string, newRole: string) => {
         const { error } = await supabase
             .from('profiles')
-            .update({ role: 'member' })
-            .eq('id', id);
+            .update({ role: newRole })
+            .eq('id', userId);
 
         if (!error) {
-            // Trigger Welcome Email
-            try {
-                await fetch('/api/send_email.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: 'MEMBER_APPROVED',
-                        data: {
-                            username: candidate.username,
-                            email: candidate.contact_email
-                        }
-                    })
-                });
-            } catch (err) {
-                console.error("Failed to send welcome email", err);
-            }
-
-            // Prompt Admin to send WhatsApp
-            if (candidate.phone_number) {
-                const cleanPhone = candidate.phone_number.replace(/\D/g, '');
-                const text = `¡Hola ${candidate.username}! Bienvenido a Boars Slayers. Tu solicitud ha sido aprobada. Por favor únete al grupo: https://chat.whatsapp.com/Dz0jyXt0SDX3Me12g3zBkk`;
-                window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
-            }
-
-            setCandidates(candidates.filter(c => c.id !== id));
+            setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
+        } else {
+            console.error('Error updating role:', error);
+            alert('Error al actualizar el rol');
         }
-        setActioningId(null);
     };
 
-    const handleReject = async (id: string) => {
-        setActioningId(id);
-        // Para simplificar, simplemente eliminamos el perfil si se rechaza
+    const handleDeleteUser = async (userId: string) => {
+        if (!confirm('¿Estás seguro de querer eliminar a este usuario? Esta acción no se puede deshacer.')) return;
+
         const { error } = await supabase
             .from('profiles')
             .delete()
-            .eq('id', id);
+            .eq('id', userId);
 
         if (!error) {
-            setCandidates(candidates.filter(c => c.id !== id));
+            setUsers(users.filter(u => u.id !== userId));
+        } else {
+            console.error('Error deleting user:', error);
+            alert('Error al eliminar usuario');
         }
-        setActioningId(null);
+    };
+
+    const filteredUsers = users.filter(user => {
+        const matchesType = filter === 'all' ||
+            (filter === 'candidate' && user.role === 'candidate') ||
+            (filter === 'member' && user.role !== 'candidate');
+
+        const matchesSearch = user.username?.toLowerCase().includes(search.toLowerCase()) ||
+            user.steam_id?.includes(search) ||
+            user.discord_id?.includes(search);
+        return matchesType && matchesSearch;
+    });
+
+    const getRoleColor = (roleName: string) => {
+        const role = roles.find(r => r.name === roleName);
+        return role ? role.color : '#78716c'; // Default stone-500
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
+        <div className="min-h-screen bg-stone-950 text-gray-200">
+            <Navbar />
 
-            {/* Content */}
-            <div className="relative w-full max-w-4xl bg-stone-900 border border-gold-600/30 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-                {/* Header */}
-                <div className="p-6 border-b border-gold-600/20 bg-black/20 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gold-600/20 rounded-lg text-gold-500">
-                            <Shield size={24} />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-serif font-bold text-white tracking-wide">Cuartel de Reclutamiento</h2>
-                            <p className="text-xs text-stone-500 uppercase tracking-widest">Panel de Administración de Miembros</p>
-                        </div>
+            <main className="max-w-7xl mx-auto px-6 py-12">
+                <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-10 gap-4">
+                    <div>
+                        <h1 className="text-3xl font-serif font-bold text-white flex items-center gap-3">
+                            <Shield className="text-gold-500" /> Panel de Administración
+                        </h1>
+                        <p className="text-stone-400 mt-2">Gestiona el clan y sus recursos.</p>
                     </div>
-                    <button
-                        onClick={fetchCandidates}
-                        className="p-2 text-stone-400 hover:text-gold-500 transition-colors"
-                        title="Refrescar lista"
-                    >
-                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                    </button>
+
+                    {/* Main Tabs */}
+                    <div className="flex bg-stone-900/50 p-1 rounded-lg border border-white/5">
+                        <button
+                            onClick={() => setActiveTab('users')}
+                            className={`px-4 py-2 rounded-md font-medium transition-all ${activeTab === 'users' ? 'bg-stone-800 text-white shadow-sm' : 'text-stone-400 hover:text-white'
+                                }`}
+                        >
+                            Usuarios
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('roles')}
+                            className={`px-4 py-2 rounded-md font-medium transition-all ${activeTab === 'roles' ? 'bg-stone-800 text-white shadow-sm' : 'text-stone-400 hover:text-white'
+                                }`}
+                        >
+                            Roles
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('badges')}
+                            className={`px-4 py-2 rounded-md font-medium transition-all ${activeTab === 'badges' ? 'bg-stone-800 text-white shadow-sm' : 'text-stone-400 hover:text-white'
+                                }`}
+                        >
+                            Insignias
+                        </button>
+                    </div>
                 </div>
 
-                {/* Body */}
-                <div className="flex-1 overflow-y-auto p-6">
-                    {loading ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-stone-500">
-                            <RefreshCw size={40} className="animate-spin mb-4 opacity-20" />
-                            <p>Buscando nuevos reclutas...</p>
+                {activeTab === 'users' ? (
+                    <>
+                        {/* Users Filter Bar */}
+                        <div className="flex flex-col md:flex-row gap-4 mb-8 justify-between">
+                            <div className="flex gap-2 bg-stone-900/50 p-1 rounded-lg border border-white/5 w-fit">
+                                <FilterButton active={filter === 'all'} onClick={() => setFilter('all')} label="Todos" />
+                                <FilterButton active={filter === 'candidate'} onClick={() => setFilter('candidate')} label="Solicitudes" count={users.filter(u => u.role === 'candidate').length} />
+                                <FilterButton active={filter === 'member'} onClick={() => setFilter('member')} label="Miembros" />
+                            </div>
+
+                            <div className="relative w-full md:w-96">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500" size={20} />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por nombre, Steam ID..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full bg-stone-900 border border-stone-800 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-gold-600/50 focus:border-gold-600 outline-none transition-all placeholder:text-stone-600"
+                                />
+                            </div>
                         </div>
-                    ) : candidates.length === 0 ? (
-                        <div className="text-center py-20 border-2 border-dashed border-stone-800 rounded-xl">
-                            <Clock size={48} className="mx-auto text-stone-600 mb-4" />
-                            <p className="text-stone-400 font-serif text-lg italic">No hay nuevos aspirantes esperando en las puertas...</p>
-                        </div>
-                    ) : (
-                        <div className="grid gap-4">
-                            {candidates.map((candidate) => (
-                                <div
-                                    key={candidate.id}
-                                    className="flex flex-col p-4 bg-white/5 border border-white/5 rounded-xl hover:border-gold-600/30 transition-all group"
-                                >
-                                    <div className="flex flex-col sm:flex-row items-center justify-between mb-4">
-                                        <div className="flex items-center gap-4 mb-4 sm:mb-0">
-                                            <div className="relative">
-                                                <img
-                                                    src={candidate.avatar_url}
-                                                    alt={candidate.username}
-                                                    className="w-14 h-14 rounded-full border-2 border-stone-700 group-hover:border-gold-600 transition-colors"
-                                                />
-                                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gray-500 rounded-full border-2 border-stone-900" title="Candidate status"></div>
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-white text-lg">{candidate.username}</h4>
-                                                <p className="text-xs font-mono text-stone-500">{candidate.id.split('-')[0]}</p>
-                                            </div>
-                                        </div>
 
-                                        <div className="flex items-center gap-3">
-                                            <button
-                                                disabled={actioningId === candidate.id}
-                                                onClick={() => handleReject(candidate.id)}
-                                                className="flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors border border-transparent hover:border-red-400/30 text-sm font-bold uppercase tracking-wider disabled:opacity-50"
-                                            >
-                                                <UserX size={18} />
-                                                Rechazar
-                                            </button>
-                                            <button
-                                                disabled={actioningId === candidate.id}
-                                                onClick={() => handleApprove(candidate.id)}
-                                                className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all shadow-lg shadow-emerald-900/20 text-sm font-bold uppercase tracking-wider disabled:opacity-50"
-                                            >
-                                                <UserCheck size={18} />
-                                                Aprobar
-                                            </button>
-                                        </div>
-                                    </div>
+                        {loading ? (
+                            <div className="flex justify-center py-20">
+                                <Loader2 className="animate-spin text-gold-500" size={40} />
+                            </div>
+                        ) : (
+                            <div className="bg-stone-900 border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-stone-950/50 text-stone-400 text-xs uppercase tracking-widest border-b border-stone-800">
+                                                <th className="p-6 font-medium">Guerrero</th>
+                                                <th className="p-6 font-medium">Steam ID</th>
+                                                <th className="p-6 font-medium">Rol Actual</th>
+                                                <th className="p-6 font-medium">Estado</th>
+                                                <th className="p-6 font-medium text-right">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-stone-800">
+                                            {filteredUsers.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={5} className="p-8 text-center text-stone-500 italic">
+                                                        No se encontraron registros.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                filteredUsers.map((user) => (
+                                                    <tr key={user.id} className="hover:bg-white/5 transition-colors group">
+                                                        <td className="p-6">
+                                                            <div className="flex items-center gap-4">
+                                                                <img src={user.avatar_url} alt={user.username} className="w-10 h-10 rounded-full bg-stone-800 object-cover" />
+                                                                <div>
+                                                                    <div className="font-bold text-white">{user.username}</div>
+                                                                    <div className="text-xs text-stone-500">{new Date(user.created_at).toLocaleDateString()}</div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-6 font-mono text-sm text-stone-400">
+                                                            {user.steam_id || <span className="text-stone-600 italic">No vinculada</span>}
+                                                        </td>
+                                                        <td className="p-6">
+                                                            <span
+                                                                className="px-2 py-1 rounded text-xs font-bold uppercase tracking-wider border"
+                                                                style={{
+                                                                    backgroundColor: `${getRoleColor(user.role)}30`, // 30 hex = ~20% opacity
+                                                                    color: getRoleColor(user.role),
+                                                                    borderColor: `${getRoleColor(user.role)}50`
+                                                                }}
+                                                            >
+                                                                {user.role}
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-6">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`w-2 h-2 rounded-full ${user.role === 'candidate' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+                                                                <span className="text-sm text-stone-300">{user.role === 'candidate' ? 'Pendiente' : 'Activo'}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-6 text-right">
+                                                            <div className="flex items-center justify-end gap-2 opacity-100 group-hover:opacity-100 transition-opacity">
+                                                                {user.role === 'candidate' ? (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={() => handleRoleUpdate(user.id, 'member')}
+                                                                            title="Aceptar en el clan"
+                                                                            className="p-2 bg-emerald-900/20 text-emerald-500 hover:bg-emerald-900/40 rounded-lg border border-emerald-800/50 transition-colors"
+                                                                        >
+                                                                            <Check size={18} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteUser(user.id)}
+                                                                            title="Rechazar solicitud"
+                                                                            className="p-2 bg-red-900/20 text-red-500 hover:bg-red-900/40 rounded-lg border border-red-800/50 transition-colors"
+                                                                        >
+                                                                            <X size={18} />
+                                                                        </button>
+                                                                    </>
+                                                                ) : (
+                                                                    // Role Selector for Approved Members
+                                                                    <div className="relative group/select">
+                                                                        <select
+                                                                            value={user.role}
+                                                                            onChange={(e) => handleRoleUpdate(user.id, e.target.value)}
+                                                                            className="appearance-none bg-stone-950 text-stone-300 border border-stone-800 rounded-lg py-1.5 pl-3 pr-8 text-sm focus:border-gold-600 focus:ring-1 focus:ring-gold-600 outline-none cursor-pointer hover:bg-stone-900"
+                                                                        >
+                                                                            {roles.map(r => (
+                                                                                <option key={r.id} value={r.name}>{r.name.charAt(0).toUpperCase() + r.name.slice(1)}</option>
+                                                                            ))}
+                                                                            {/* Fallback if user has a role not in db yet */}
+                                                                            {!roles.find(r => r.name === user.role) && <option value={user.role}>{user.role}</option>}
+                                                                        </select>
+                                                                        <Settings size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" />
+                                                                    </div>
+                                                                )}
 
-                                    {/* Recruitment Details */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 p-4 bg-black/40 rounded-lg border border-white/5">
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] text-gold-500 uppercase tracking-widest font-bold">Contacto</p>
-                                            <div className="flex flex-col gap-1 text-xs">
-                                                <div className="flex items-center gap-2 text-stone-300">
-                                                    <Mail size={12} className="text-stone-500" />
-                                                    <span>{candidate.contact_email || 'No email'}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-stone-300">
-                                                    <Phone size={12} className="text-stone-500" />
-                                                    <span>{candidate.phone_number || 'No phone'}</span>
-                                                </div>
-                                            </div>
-
-                                            <p className="text-[10px] text-gold-500 uppercase tracking-widest font-bold mt-3">Identidad de Batalla</p>
-                                            <div className="flex flex-wrap gap-2 text-xs">
-                                                <span className="px-2 py-1 bg-stone-800 rounded border border-stone-700 text-stone-300">
-                                                    Steam: {candidate.steam_id || 'N/A'}
-                                                </span>
-                                                {candidate.aoe_insights_url && (
-                                                    <a
-                                                        href={candidate.aoe_insights_url}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="px-2 py-1 bg-stone-800 rounded border border-stone-700 text-gold-400 hover:border-gold-500 flex items-center gap-1 transition-colors"
-                                                    >
-                                                        AOE Insights <ExternalLink size={10} />
-                                                    </a>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] text-gold-500 uppercase tracking-widest font-bold">Por qué quiere unirse</p>
-                                            <p className="text-xs text-stone-300 italic leading-relaxed">
-                                                "{candidate.reason || 'No proporcionado'}"
-                                            </p>
-                                        </div>
-                                    </div>
+                                                                {user.role !== 'candidate' && (
+                                                                    <button
+                                                                        onClick={() => confirm('¿Revocar membresía y volver a estado de solicitud?') && handleRoleUpdate(user.id, 'candidate')}
+                                                                        title="Revocar / Degradar"
+                                                                        className="p-2 ml-2 bg-stone-800 text-stone-400 hover:bg-red-900/20 hover:text-red-500 rounded-lg transition-colors"
+                                                                    >
+                                                                        <UserX size={18} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Footer */}
-                <div className="p-4 bg-black/40 text-center border-t border-white/5">
-                    <button
-                        onClick={onClose}
-                        className="text-stone-500 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
-                    >
-                        Cerrar Panel
-                    </button>
-                </div>
-            </div>
+                            </div>
+                        )}
+                    </>
+                ) : activeTab === 'roles' ? (
+                    <RoleManager />
+                ) : (
+                    <BadgeManager />
+                )}
+            </main>
+            <Footer />
         </div>
     );
 };
+
+const FilterButton: React.FC<{ active: boolean; onClick: () => void; label: string; count?: number }> = ({ active, onClick, label, count }) => (
+    <button
+        onClick={onClick}
+        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${active
+            ? 'bg-stone-800 text-white shadow-sm'
+            : 'text-stone-400 hover:text-white hover:bg-stone-800/50'
+            }`}
+    >
+        {label}
+        {count !== undefined && count > 0 && (
+            <span className="bg-gold-600 text-stone-950 text-[10px] font-black px-1.5 rounded-full">{count}</span>
+        )}
+    </button>
+);

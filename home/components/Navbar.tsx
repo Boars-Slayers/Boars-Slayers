@@ -62,15 +62,45 @@ export const Navbar: React.FC = () => {
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
           {NAV_ITEMS.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              onClick={(e) => handleNavClick(e, item.href)}
-              className="text-sm uppercase tracking-widest text-gray-400 hover:text-gold-400 transition-colors font-medium relative group"
-            >
-              {item.label}
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gold-500 transition-all duration-300 group-hover:w-full"></span>
-            </a>
+            <div key={item.label} className="relative group h-full flex items-center">
+              {item.children ? (
+                <>
+                  <button
+                    className="flex items-center gap-1 text-sm uppercase tracking-widest text-gray-400 hover:text-gold-400 transition-colors font-medium h-full"
+                    onClick={() => { }}
+                  >
+                    {item.label}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                  </button>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                    <div className="bg-stone-900 border border-stone-800 rounded-md shadow-xl overflow-hidden">
+                      {item.children.map((child) => (
+                        <a
+                          key={child.label}
+                          href={child.href}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(child.href);
+                          }}
+                          className="block px-4 py-3 text-sm text-gray-300 hover:bg-stone-800 hover:text-gold-400 border-b border-stone-800 last:border-0"
+                        >
+                          {child.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <a
+                  href={item.href}
+                  onClick={(e) => handleNavClick(e, item.href)}
+                  className="text-sm uppercase tracking-widest text-gray-400 hover:text-gold-400 transition-colors font-medium relative group"
+                >
+                  {item.label}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gold-500 transition-all duration-300 group-hover:w-full"></span>
+                </a>
+              )}
+            </div>
           ))}
           <AuthStatus />
         </div>
@@ -88,14 +118,37 @@ export const Navbar: React.FC = () => {
       <div className={`md:hidden absolute top-full left-0 w-full bg-stone-900 border-b border-gold-900/50 shadow-2xl transition-all duration-300 overflow-hidden ${isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="flex flex-col p-6 gap-4">
           {NAV_ITEMS.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              onClick={(e) => handleNavClick(e, item.href)}
-              className="text-lg font-serif text-gray-300 hover:text-gold-500"
-            >
-              {item.label}
-            </a>
+            <div key={item.label}>
+              {item.children ? (
+                <div className="flex flex-col gap-2">
+                  <span className="text-lg font-serif text-gold-500">{item.label}</span>
+                  <div className="pl-4 flex flex-col gap-2 border-l border-stone-800 ml-2">
+                    {item.children.map((child) => (
+                      <a
+                        key={child.label}
+                        href={child.href}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate(child.href);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="text-base font-serif text-gray-400 hover:text-gold-400"
+                      >
+                        {child.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <a
+                  href={item.href}
+                  onClick={(e) => handleNavClick(e, item.href)}
+                  className="text-lg font-serif text-gray-300 hover:text-gold-500"
+                >
+                  {item.label}
+                </a>
+              )}
+            </div>
           ))}
         </div>
       </div>

@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from './AuthContext';
 import { JoinModal } from './components/JoinModal';
 import { Routes, Route } from 'react-router-dom';
 import { ProfilePage } from './components/ProfilePage';
+import { AdminPanel } from './components/AdminPanel';
+import { TournamentList } from './components/tournaments/TournamentList';
 
 const HomePage: React.FC = () => {
   const { user, login, profile, refreshProfile } = useAuth();
@@ -59,6 +61,14 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/user/:username" element={<ProfilePage />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/tournaments" element={
+          <div className="min-h-screen bg-stone-950 text-gray-200">
+            <Navbar />
+            <TournamentList />
+            <Footer />
+          </div>
+        } />
         {/* Fallback to home */}
         <Route path="*" element={<HomePage />} />
       </Routes>

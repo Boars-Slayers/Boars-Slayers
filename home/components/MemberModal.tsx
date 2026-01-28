@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Member } from '../types';
-import { X, Trophy, Crown, TrendingUp, Swords, User } from 'lucide-react';
+import { X, Trophy, Crown, TrendingUp, Swords, User, Loader2 } from 'lucide-react';
+import { fetchPlayerStats, PlayerStats } from '../lib/aoe';
 
 interface MemberModalProps {
     member: Member;
@@ -10,15 +11,28 @@ interface MemberModalProps {
 
 export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onViewProfile }) => {
     const [isVisible, setIsVisible] = useState(false);
+    const [stats, setStats] = useState<PlayerStats | null>(null);
+    const [loadingStats, setLoadingStats] = useState(false);
 
     useEffect(() => {
         setIsVisible(true);
         // Prevent scrolling when modal is open
         document.body.style.overflow = 'hidden';
+
+        const loadStats = async () => {
+            if (member.steamId) {
+                setLoadingStats(true);
+                const data = await fetchPlayerStats(member.steamId);
+                setStats(data);
+                setLoadingStats(false);
+            }
+        };
+        loadStats();
+
         return () => {
             document.body.style.overflow = 'unset';
         };
-    }, []);
+    }, [member.steamId]);
 
     const handleClose = () => {
         setIsVisible(false);
@@ -59,13 +73,13 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
                                 className="relative w-full h-full rounded-full border-4 border-stone-800 object-cover shadow-xl"
                             />
                             <div className="absolute -bottom-2 -right-2 bg-stone-900 rounded-full p-2 border border-gold-600 text-gold-500">
-                                {member.role === 'Leader' ? <Crown size={16} /> : <Swords size={16} />}
+                                {['Leader', 'Admin'].includes(member.role) ? <Crown size={16} /> : <Swords size={16} />}
                             </div>
                         </div>
 
                         <h2 className="text-2xl font-serif font-bold text-white text-center mb-1">{member.name}</h2>
                         <span className="px-3 py-1 rounded-full bg-gold-900/30 text-gold-400 text-xs uppercase tracking-widest font-bold border border-gold-900/50 mb-6">
-                            {member.role === 'Leader' ? 'Fundador' : 'Guerrero'}
+                            {member.role}
                         </span>
 
                         {onViewProfile && (
@@ -89,37 +103,43 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
                         <div className="grid grid-cols-2 gap-4 mb-8">
                             <div className="bg-stone-800/50 p-4 rounded-lg border border-stone-700/50">
                                 <p className="text-xs text-stone-400 uppercase tracking-wide mb-1">ELO (1v1)</p>
-                                <p className="text-2xl font-bold text-white font-mono">1200 <span className="text-xs text-emerald-500 font-normal">▲ 12</span></p>
+                                <p className="text-2xl font-bold text-white font-mono">
+                                    {loadingStats ? <Loader2 className="animate-spin h-6 w-6" /> : (stats?.elo1v1 || '--')}
+                                </p>
                             </div>
                             <div className="bg-stone-800/50 p-4 rounded-lg border border-stone-700/50">
                                 <p className="text-xs text-stone-400 uppercase tracking-wide mb-1">Win Rate</p>
-                                <p className="text-2xl font-bold text-white font-mono">54%</p>
+                                <p className="text-2xl font-bold text-white font-mono">
+                                    {loadingStats ? '...' : (stats?.winRate1v1 ? `${stats.winRate1v1}%` : '--')}
+                                </p>
                             </div>
                             <div className="bg-stone-800/50 p-4 rounded-lg border border-stone-700/50">
                                 <p className="text-xs text-stone-400 uppercase tracking-wide mb-1">Civilización</p>
                                 <p className="text-xl font-bold text-gold-400">{member.favoriteCiv || 'Random'}</p>
                             </div>
                             <div className="bg-stone-800/50 p-4 rounded-lg border border-stone-700/50">
-                                <p className="text-xs text-stone-400 uppercase tracking-wide mb-1">Rank</p>
+                                <p className="text-xs text-stone-400 uppercase tracking-wide mb-1">ELO (TG)</p>
                                 <div className="flex items-center gap-2 text-white">
                                     <Trophy size={16} className="text-yellow-600" />
-                                    <span className="font-bold">Gold III</span>
+                                    <span className="font-bold">{loadingStats ? '...' : (stats?.eloTG || '--')}</span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Simulated Match History - Visual Only */}
+                        {/* Simulated Match History - Removed fake data */}
                         <div>
                             <p className="text-xs text-stone-500 uppercase tracking-wider mb-3">Últimas Partidas</p>
                             <div className="space-y-2">
-                                {[1, 2, 3].map((_, i) => (
-                                    <div key={i} className="flex items-center justify-between p-2 rounded bg-white/5 hover:bg-white/10 transition-colors text-sm">
-                                        <span className="text-gray-300">vs. Franks</span>
-                                        <span className={`font-mono ${i === 1 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                            {i === 1 ? 'L' : 'W'}
+                                {stats && stats.streak !== 0 ? (
+                                    <div className="flex items-center justify-between p-2 rounded bg-white/5 text-sm">
+                                        <span className="text-gray-300">Racha Actual</span>
+                                        <span className={`font-mono ${stats.streak < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                            {stats.streak > 0 ? `+${stats.streak} Victorias` : `${stats.streak} Derrotas`}
                                         </span>
                                     </div>
-                                ))}
+                                ) : (
+                                    <p className="text-stone-500 italic text-xs">Sin historial reciente.</p>
+                                )}
                             </div>
                         </div>
                     </div>
