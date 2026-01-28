@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
 import { Showmatch } from '../types';
-import { Plus, Swords, Trash, Calendar, Link, Trash2, Edit2, Play, CheckCircle } from 'lucide-react';
+import { Plus, Swords, Calendar, Trash2, Play, CheckCircle } from 'lucide-react';
 
 export const ShowmatchManager: React.FC = () => {
     const [matches, setMatches] = useState<Showmatch[]>([]);
     const [users, setUsers] = useState<UserProfile[]>([]);
-    const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
 
     const [newMatch, setNewMatch] = useState<Partial<Showmatch>>({
@@ -21,15 +20,13 @@ export const ShowmatchManager: React.FC = () => {
     }, []);
 
     const fetchData = async () => {
-        setLoading(true);
         const [mRes, uRes] = await Promise.all([
             supabase.from('showmatches').select('*, p1:profiles!player1_id(username), p2:profiles!player2_id(username)').order('scheduled_time', { ascending: false }),
-            supabase.from('profiles').select('id, username').neq('role', 'candidate')
+            supabase.from('profiles').select('*').neq('role', 'candidate')
         ]);
 
         if (mRes.data) setMatches(mRes.data);
         if (uRes.data) setUsers(uRes.data);
-        setLoading(false);
     };
 
     const handleCreate = async () => {

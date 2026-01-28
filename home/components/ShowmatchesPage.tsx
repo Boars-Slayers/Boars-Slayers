@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Showmatch } from '../types';
-import { Swords, Calendar, Play, Trophy, User } from 'lucide-react';
+import { Swords, Calendar, Play, User } from 'lucide-react';
 
 export const ShowmatchesPage: React.FC = () => {
     const [matches, setMatches] = useState<Showmatch[]>([]);

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase, UserProfile } from '../../lib/supabase';
-import { Tournament } from '../../types';
+import { supabase } from '../../lib/supabase';
 import { Calendar, Users, Trophy as TrophyIcon, ArrowLeft, Loader, Shield, DollarSign, Gift, CheckCircle, Clock } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
 

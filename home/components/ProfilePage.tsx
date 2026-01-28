@@ -56,7 +56,7 @@ export const ProfilePage: React.FC = () => {
                         elo1v1: data.elo_1v1,
                         eloTG: data.elo_tg,
                         winRate1v1: data.win_rate_1v1,
-                        games_played: data.games_played,
+                        gamesPlayed: data.games_played,
                         streak: data.streak
                     });
                 } else if (data.steam_id) {
@@ -114,21 +114,6 @@ export const ProfilePage: React.FC = () => {
         }
     };
 
-    const fetchUserBadges = async (userId: string) => {
-        try {
-            const { data, error } = await supabase
-                .from('user_badges')
-                .select('badge_id, badges(id, image_url, description)')
-                .eq('user_id', userId);
-
-            if (data && !error) {
-                const formattedBadges = data.map((item: any) => item.badges);
-                setUserBadges(formattedBadges);
-            }
-        } catch (error) {
-            console.error('Error fetching user badges:', error);
-        }
-    };
 
 
     if (loading) {

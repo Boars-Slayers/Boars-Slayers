@@ -10,7 +10,7 @@ import { TournamentManager } from './TournamentManager';
 import { UserBadgeManager } from './UserBadgeManager';
 import { ShowmatchManager } from './ShowmatchManager';
 import { UserCreator } from './UserCreator';
-import { Award, Swords, UserPlus } from 'lucide-react';
+import { Award, UserPlus } from 'lucide-react';
 
 export const AdminPanel: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'users' | 'badges' | 'roles' | 'tournaments' | 'showmatches'>('users');
@@ -147,10 +147,6 @@ export const AdminPanel: React.FC = () => {
         return matchesType && matchesSearch;
     });
 
-    const getRoleColor = (roleName: string) => {
-        const role = roles.find(r => r.name === roleName);
-        return role ? role.color : '#78716c'; // Default stone-500
-    };
 
     return (
         <div className="min-h-screen bg-stone-950 text-gray-200">
