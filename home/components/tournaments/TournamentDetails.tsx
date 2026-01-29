@@ -138,7 +138,8 @@ export const TournamentDetails: React.FC = () => {
             .insert({ tournament_id: id, user_id: userId });
 
         if (error) {
-            alert('Error al agregar admin');
+            console.error('Error adding admin:', error);
+            alert(`Error al agregar admin: ${error.message}`);
         } else {
             fetchTournamentDetails();
             setAdminSearch('');
