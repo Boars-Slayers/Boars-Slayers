@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Calendar, Users, Trophy as TrophyIcon, ArrowLeft, Loader, Shield, Gift, CheckCircle, Lock, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
-import { MatchModal } from './MatchModal';
+
 import { StandingsTable } from './StandingsTable';
 import { BracketView } from './BracketView';
 import { MomentCard } from '../Moments/MomentCard';
@@ -59,7 +59,7 @@ export const TournamentDetails: React.FC = () => {
                 .order('match_number', { ascending: true });
             setMatches(mData || []);
 
-            const { data: aData } = await supabase
+            await supabase
                 .from('tournament_admins')
                 .select('*, user:profiles(id, username, avatar_url)')
                 .eq('tournament_id', id);
