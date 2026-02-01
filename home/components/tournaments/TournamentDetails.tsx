@@ -220,15 +220,7 @@ export const TournamentDetails: React.FC = () => {
                 >
                     Momentos ({moments.length})
                 </button>
-                {isCoAdmin && (
-                    <button
-                        onClick={() => setActiveTab('settings')}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors whitespace-nowrap flex items-center gap-2
-                            ${activeTab === 'settings' ? 'bg-gold-600/10 text-gold-500 border border-gold-600/20' : 'text-stone-500 hover:text-stone-300'}`}
-                    >
-                        <Settings size={14} /> Gestión
-                    </button>
-                )}
+
             </div>
 
             {/* Info Tab */}
@@ -321,35 +313,14 @@ export const TournamentDetails: React.FC = () => {
                                 <TrophyIcon className="text-gold-500" />
                                 {tournament.bracket_type === 'round_robin' ? 'Partidos' : 'Cuadro'}
                             </h2>
-                            {isCoAdmin && (
-                                <button
-                                    onClick={() => {
-                                        setEditingMatch(null);
-                                        setMatchModalRound(1);
-                                        setIsMatchModalOpen(true);
-                                    }}
-                                    className="text-xs bg-gold-600/10 text-gold-500 border border-gold-500/20 px-3 py-1.5 rounded-lg hover:bg-gold-600/20 transition-colors uppercase font-bold tracking-wider"
-                                >
-                                    + Agregar Partido
-                                </button>
-                            )}
+
                         </div>
 
                         {tournament.bracket_type === 'round_robin' ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {matches.map(match => (
                                     <div key={match.id} className="bg-stone-950 border border-stone-800 p-4 rounded-xl flex flex-col gap-4 relative group">
-                                        {isCoAdmin && (
-                                            <button
-                                                onClick={() => {
-                                                    setEditingMatch(match);
-                                                    setIsMatchModalOpen(true);
-                                                }}
-                                                className="absolute top-2 right-2 text-stone-600 hover:text-white"
-                                            >
-                                                <Settings size={14} />
-                                            </button>
-                                        )}
+
                                         <div className="flex justify-between items-center">
                                             <span className={`font-bold ${match.winner_id === match.player1_id ? 'text-gold-400' : 'text-stone-300'}`}>
                                                 {match.p1?.username}
@@ -395,65 +366,7 @@ export const TournamentDetails: React.FC = () => {
                 </div>
             )}
 
-            {/* Settings Tab (Co-Admins) */}
-            {activeTab === 'settings' && isCoAdmin && (
-                <div className="animate-in fade-in slide-in-from-bottom-2 space-y-8">
-                    <div className="bg-stone-900/40 border border-stone-800 rounded-2xl p-8 max-w-2xl mx-auto">
-                        <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                            <Users className="text-gold-500" size={20} /> Co-Administradores
-                        </h2>
 
-                        <div className="mb-6">
-                            <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Agregar Co-Admin</label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={adminSearch}
-                                    onChange={e => setAdminSearch(e.target.value)}
-                                    className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-gold-500 outline-none"
-                                    placeholder="Buscar usuario..."
-                                />
-                                {adminSearch && (
-                                    <div className="absolute top-full left-0 right-0 mt-2 bg-stone-900 border border-stone-800 rounded-xl max-h-48 overflow-y-auto z-50 shadow-2xl">
-                                        {allProfiles
-                                            .filter(u => u.username.toLowerCase().includes(adminSearch.toLowerCase()))
-                                            .filter(u => !admins.some(a => a.user_id === u.id))
-                                            .map(u => (
-                                                <button
-                                                    key={u.id}
-                                                    onClick={() => handleAddAdmin(u.id)}
-                                                    className="w-full text-left px-4 py-2 hover:bg-stone-800 text-stone-300 text-sm flex items-center gap-2"
-                                                >
-                                                    <img src={u.avatar_url || ''} className="w-6 h-6 rounded-full bg-stone-800" />
-                                                    {u.username}
-                                                </button>
-                                            ))
-                                        }
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            <p className="text-xs text-stone-500 uppercase tracking-widest font-bold">Admins Actuales</p>
-                            {admins.map(admin => (
-                                <div key={admin.id} className="flex justify-between items-center p-3 bg-stone-950 border border-stone-800 rounded-xl">
-                                    <div className="flex items-center gap-3">
-                                        <img src={admin.user?.avatar_url || ''} className="w-8 h-8 rounded-full bg-stone-800" />
-                                        <span className="text-stone-300 font-medium">{admin.user?.username}</span>
-                                    </div>
-                                    <button
-                                        onClick={() => handleRemoveAdmin(admin.id)}
-                                        className="text-stone-600 hover:text-red-500 transition-colors"
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <MatchModal
                 isOpen={isMatchModalOpen}

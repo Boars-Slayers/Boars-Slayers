@@ -18,7 +18,13 @@ export const TournamentManager: React.FC = () => {
     // Match management state
     const [matches, setMatches] = useState<any[]>([]);
     const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
+    const [matches, setMatches] = useState<any[]>([]);
+    const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
     const [editingMatch, setEditingMatch] = useState<any>(null);
+
+    // Admin management state
+    const [admins, setAdmins] = useState<any[]>([]);
+    const [adminSearch, setAdminSearch] = useState('');
 
     useEffect(() => {
         fetchTournaments();
@@ -27,7 +33,9 @@ export const TournamentManager: React.FC = () => {
     useEffect(() => {
         if (isEditing && currentTournament.id) {
             fetchParticipants(currentTournament.id);
+            fetchParticipants(currentTournament.id);
             fetchMatches(currentTournament.id);
+            fetchAdmins(currentTournament.id);
             fetchProfiles();
         }
     }, [isEditing, currentTournament.id]);
@@ -90,6 +98,19 @@ export const TournamentManager: React.FC = () => {
         }
     };
 
+    const fetchAdmins = async (tournamentId: string) => {
+        const { data, error } = await supabase
+            .from('tournament_admins')
+            .select('*, user:profiles(id, username, avatar_url)')
+            .eq('tournament_id', tournamentId);
+
+        if (error) {
+            console.error('Error fetching admins:', error);
+        } else {
+            setAdmins(data || []);
+        }
+    };
+
     const addParticipant = async (user_id: string) => {
         if (!currentTournament.id) return;
 
@@ -127,6 +148,41 @@ export const TournamentManager: React.FC = () => {
             alert('Error al eliminar el participante');
         } else {
             setParticipants(participants.filter(p => p.id !== participantId));
+        }
+    };
+
+    const addAdmin = async (user_id: string) => {
+        if (!currentTournament.id) return;
+
+        const { error } = await supabase
+            .from('tournament_admins')
+            .insert([{
+                tournament_id: currentTournament.id,
+                user_id
+            }]);
+
+        if (error) {
+            console.error('Error adding admin:', error);
+            alert('Error al agregar el administrador');
+        } else {
+            fetchAdmins(currentTournament.id);
+            setAdminSearch('');
+        }
+    };
+
+    const removeAdmin = async (adminId: string) => {
+        if (!confirm('¿Quitar permisos de administrador a este usuario?')) return;
+
+        const { error } = await supabase
+            .from('tournament_admins')
+            .delete()
+            .eq('id', adminId);
+
+        if (error) {
+            console.error('Error removing admin:', error);
+            alert('Error al eliminar el administrador');
+        } else {
+            setAdmins(admins.filter(a => a.id !== adminId));
         }
     };
 
@@ -483,41 +539,129 @@ export const TournamentManager: React.FC = () => {
                                     {/* Add Participant Search */}
                                     <div className="space-y-4">
                                         <p className="text-sm font-medium text-stone-400 mb-2 uppercase tracking-widest text-[10px]">Agregar Invitado</p>
-                                        <div className="relative">
+                                        <div className="relative group">
                                             <input
                                                 type="text"
                                                 value={memberSearch}
                                                 onChange={e => setMemberSearch(e.target.value)}
                                                 placeholder="Buscar miembro del clan..."
-                                                className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-gold-500 outline-none text-sm"
+                                                className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-gold-500 outline-none text-sm peer"
                                             />
-                                            {memberSearch && (
-                                                <div className="absolute top-full left-0 right-0 mt-2 bg-stone-900 border border-stone-800 rounded-xl shadow-2xl overflow-hidden z-20 max-h-48 overflow-y-auto">
-                                                    {allProfiles
-                                                        .filter(u => u.username.toLowerCase().includes(memberSearch.toLowerCase()))
-                                                        .filter(u => !participants.some(p => p.user_id === u.id))
-                                                        .slice(0, 5)
-                                                        .map(u => (
-                                                            <button
-                                                                key={u.id}
-                                                                onClick={() => addParticipant(u.id)}
-                                                                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-stone-800 text-stone-300 text-sm transition-colors text-left"
-                                                            >
-                                                                <div className="w-7 h-7 rounded-full overflow-hidden border border-stone-700 flex-shrink-0">
-                                                                    {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-stone-800" />}
-                                                                </div>
-                                                                {u.username}
-                                                                <Plus size={14} className="ml-auto text-gold-500" />
-                                                            </button>
-                                                        ))
-                                                    }
-                                                    {allProfiles.filter(u => u.username.toLowerCase().includes(memberSearch.toLowerCase()) && !participants.some(p => p.user_id === u.id)).length === 0 && (
-                                                        <div className="p-4 text-center text-stone-600 text-xs italic">No se encontraron miembros para invitar</div>
-                                                    )}
-                                                </div>
-                                            )}
+                                            {/* Show dropdown on focus or if input exists */}
+                                            <div className="hidden peer-focus:block hover:block absolute top-full left-0 right-0 mt-2 bg-stone-900 border border-stone-800 rounded-xl shadow-2xl overflow-hidden z-20 max-h-48 overflow-y-auto">
+                                                {allProfiles
+                                                    .filter(u => u.username.toLowerCase().includes(memberSearch.toLowerCase()))
+                                                    .filter(u => !participants.some(p => p.user_id === u.id))
+                                                    .slice(0, 10)
+                                                    .map(u => (
+                                                        <button
+                                                            key={u.id}
+                                                            onClick={() => addParticipant(u.id)}
+                                                            onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
+                                                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-stone-800 text-stone-300 text-sm transition-colors text-left"
+                                                        >
+                                                            <div className="w-6 h-6 rounded-full overflow-hidden border border-stone-700 flex-shrink-0">
+                                                                {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-stone-800" />}
+                                                            </div>
+                                                            {u.username}
+                                                            <Plus size={14} className="ml-auto text-gold-500" />
+                                                        </button>
+                                                    ))
+                                                }
+                                                {allProfiles.length > 0 && allProfiles.filter(u => u.username.toLowerCase().includes(memberSearch.toLowerCase()) && !participants.some(p => p.user_id === u.id)).length === 0 && (
+                                                    <div className="p-4 text-center text-stone-600 text-xs italic">No se encontraron miembros para invitar</div>
+                                                )}
+                                            </div>
                                             <p className="text-[10px] text-stone-600 mt-3 italic leading-relaxed">
                                                 Busca a un miembro para agregarlo directamente. Los participantes agregados manualmente aparecerán con estado "Aprobado".
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Admin Management - Only for existing tournaments */}
+                        {currentTournament.id && (
+                            <div className="col-span-full mt-12 pt-8 border-t border-stone-800">
+                                <h4 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                                    <Users size={20} className="text-gold-500" />
+                                    Gestión de Administradores ({admins.length})
+                                </h4>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* Admin List */}
+                                    <div className="space-y-4">
+                                        <p className="text-sm font-medium text-stone-400 mb-2 uppercase tracking-widest text-[10px]">Administradores Actuales</p>
+                                        <div className="bg-stone-950 border border-stone-800 rounded-xl overflow-hidden min-h-[100px]">
+                                            {admins.length === 0 ? (
+                                                <div className="p-8 text-center text-stone-600 italic text-sm">No hay administradores designados</div>
+                                            ) : (
+                                                <div className="divide-y divide-stone-900">
+                                                    {admins.map((a) => (
+                                                        <div key={a.id} className="flex items-center justify-between p-3 group hover:bg-stone-900/50 transition-colors">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-8 h-8 rounded-full overflow-hidden border border-stone-800 bg-stone-900">
+                                                                    {a.user?.avatar_url ? (
+                                                                        <img src={a.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <div className="w-full h-full flex items-center justify-center text-stone-700 font-bold text-xs">?</div>
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-sm font-medium text-stone-200">{a.user?.username}</span>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => removeAdmin(a.id)}
+                                                                className="opacity-0 group-hover:opacity-100 p-1.5 text-stone-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                                                                title="Eliminar administrador"
+                                                            >
+                                                                <X size={16} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Add Admin Search */}
+                                    <div className="space-y-4">
+                                        <p className="text-sm font-medium text-stone-400 mb-2 uppercase tracking-widest text-[10px]">Agregar Administrador</p>
+                                        <div className="relative group">
+                                            <input
+                                                type="text"
+                                                value={adminSearch}
+                                                onChange={e => setAdminSearch(e.target.value)}
+                                                placeholder="Buscar miembro para hacer admin..."
+                                                className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-gold-500 outline-none text-sm peer"
+                                            />
+                                            {/* Show dropdown on focus (simulated with CSS/Logic) or if having input */}
+                                            <div className="hidden peer-focus:block hover:block absolute top-full left-0 right-0 mt-2 bg-stone-900 border border-stone-800 rounded-xl shadow-2xl overflow-hidden z-20 max-h-48 overflow-y-auto">
+                                                {allProfiles
+                                                    .filter(u => u.username.toLowerCase().includes(adminSearch.toLowerCase()))
+                                                    .filter(u => !admins.some(a => a.user_id === u.id))
+                                                    .slice(0, 10)
+                                                    .map(u => (
+                                                        <button
+                                                            key={u.id}
+                                                            onClick={() => addAdmin(u.id)} // Correction here from addParticipant to addAdmin
+                                                            onMouseDown={(e) => e.preventDefault()} // Prevent blur before click
+                                                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-stone-800 text-stone-300 text-sm transition-colors text-left"
+                                                        >
+                                                            <div className="w-6 h-6 rounded-full overflow-hidden border border-stone-700 flex-shrink-0">
+                                                                {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-stone-800" />}
+                                                            </div>
+                                                            {u.username}
+                                                            <Plus size={14} className="ml-auto text-gold-500" />
+                                                        </button>
+                                                    ))
+                                                }
+                                                {allProfiles.length > 0 && allProfiles.filter(u => u.username.toLowerCase().includes(adminSearch.toLowerCase()) && !admins.some(a => a.user_id === u.id)).length === 0 && (
+                                                    <div className="p-4 text-center text-stone-600 text-xs italic">No se encontraron miembros</div>
+                                                )}
+                                            </div>
+                                            <p className="text-[10px] text-stone-600 mt-3 italic leading-relaxed">
+                                                Los administradores podrán editar el torneo y gestionar los partidos.
                                             </p>
                                         </div>
                                     </div>
