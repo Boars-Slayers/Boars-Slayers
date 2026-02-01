@@ -18,8 +18,6 @@ export const TournamentManager: React.FC = () => {
     // Match management state
     const [matches, setMatches] = useState<any[]>([]);
     const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
-    const [matches, setMatches] = useState<any[]>([]);
-    const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
     const [editingMatch, setEditingMatch] = useState<any>(null);
 
     // Admin management state

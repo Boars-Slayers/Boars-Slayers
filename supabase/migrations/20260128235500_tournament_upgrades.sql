@@ -1,4 +1,6 @@
 -- 1. Tournament Admins (Co-Admins)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE IF NOT EXISTS tournament_admins (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tournament_id UUID REFERENCES tournaments(id) ON DELETE CASCADE,

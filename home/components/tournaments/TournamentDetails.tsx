@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Calendar, Users, Trophy as TrophyIcon, ArrowLeft, Loader, Shield, Gift, CheckCircle, Settings, Lock, Image as ImageIcon, X } from 'lucide-react';
+import { Calendar, Users, Trophy as TrophyIcon, ArrowLeft, Loader, Shield, Gift, CheckCircle, Lock, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
 import { MatchModal } from './MatchModal';
 import { StandingsTable } from './StandingsTable';
@@ -10,27 +10,17 @@ import { MomentCard } from '../Moments/MomentCard';
 
 export const TournamentDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const { user, profile } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
 
     const [tournament, setTournament] = useState<any>(null);
     const [participants, setParticipants] = useState<any[]>([]);
     const [matches, setMatches] = useState<any[]>([]);
     const [moments, setMoments] = useState<any[]>([]);
-    const [admins, setAdmins] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isJoining, setIsJoining] = useState(false);
     const [isParticipant, setIsParticipant] = useState(false);
-    const [activeTab, setActiveTab] = useState<'info' | 'bracket' | 'moments' | 'settings'>('info');
-
-    // Match Modal State
-    const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
-    const [editingMatch, setEditingMatch] = useState<any>(null);
-    const [matchModalRound, setMatchModalRound] = useState(1);
-
-    // Settings State
-    const [adminSearch, setAdminSearch] = useState('');
-    const [allProfiles, setAllProfiles] = useState<any[]>([]);
+    const [activeTab, setActiveTab] = useState<'info' | 'bracket' | 'moments'>('info');
 
     useEffect(() => {
         if (id) {
@@ -38,16 +28,7 @@ export const TournamentDetails: React.FC = () => {
         }
     }, [id, user]);
 
-    useEffect(() => {
-        if (activeTab === 'settings' && id) {
-            fetchProfiles();
-        }
-    }, [activeTab, id]);
 
-    const fetchProfiles = async () => {
-        const { data } = await supabase.from('profiles').select('id, username, avatar_url');
-        if (data) setAllProfiles(data);
-    };
 
     const fetchTournamentDetails = async () => {
         setLoading(true);
@@ -78,12 +59,10 @@ export const TournamentDetails: React.FC = () => {
                 .order('match_number', { ascending: true });
             setMatches(mData || []);
 
-            // Fetch admins
             const { data: aData } = await supabase
                 .from('tournament_admins')
                 .select('*, user:profiles(id, username, avatar_url)')
                 .eq('tournament_id', id);
-            setAdmins(aData || []);
 
             // Fetch moments
             const { data: moData } = await supabase
@@ -104,7 +83,7 @@ export const TournamentDetails: React.FC = () => {
         }
     };
 
-    const isCoAdmin = user && (profile?.role === 'admin' || tournament?.created_by === user.id || admins.some(a => a.user_id === user.id));
+
 
     const handleJoin = async () => {
         if (!user) {
@@ -132,25 +111,7 @@ export const TournamentDetails: React.FC = () => {
         }
     };
 
-    const handleAddAdmin = async (userId: string) => {
-        const { error } = await supabase
-            .from('tournament_admins')
-            .insert({ tournament_id: id, user_id: userId });
 
-        if (error) {
-            console.error('Error adding admin:', error);
-            alert(`Error al agregar admin: ${error.message}`);
-        } else {
-            fetchTournamentDetails();
-            setAdminSearch('');
-        }
-    };
-
-    const handleRemoveAdmin = async (adminId: string) => {
-        if (!confirm('¿Quitar permisos de admin?')) return;
-        await supabase.from('tournament_admins').delete().eq('id', adminId);
-        fetchTournamentDetails();
-    };
 
     if (loading) {
         return (
@@ -220,7 +181,6 @@ export const TournamentDetails: React.FC = () => {
                 >
                     Momentos ({moments.length})
                 </button>
-
             </div>
 
             {/* Info Tab */}
@@ -368,15 +328,7 @@ export const TournamentDetails: React.FC = () => {
 
 
 
-            <MatchModal
-                isOpen={isMatchModalOpen}
-                onClose={() => setIsMatchModalOpen(false)}
-                onSave={fetchTournamentDetails}
-                tournamentId={id || ''}
-                participants={participants}
-                existingMatch={editingMatch}
-                round={matchModalRound}
-            />
+
         </div>
     );
 };
