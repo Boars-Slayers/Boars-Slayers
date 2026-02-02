@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, UserProfile, ClanRole } from '../lib/supabase';
-import { Shield, Check, X, Search, Loader2, UserX, Settings, Crown } from 'lucide-react';
+import { Check, X, Search, Loader2, UserX, Settings, Crown } from 'lucide-react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 
