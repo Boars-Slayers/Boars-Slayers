@@ -142,7 +142,8 @@ export const MatchModal: React.FC<MatchModalProps> = ({ isOpen, onClose, onSave,
                             <select
                                 value={player1Id}
                                 onChange={e => setPlayer1Id(e.target.value)}
-                                className="w-full bg-stone-950 border border-stone-800 rounded-lg p-2 text-white focus:border-gold-500 outline-none"
+                                disabled={!!existingMatch}
+                                className={`w-full bg-stone-950 border border-stone-800 rounded-lg p-2 text-white focus:border-gold-500 outline-none ${existingMatch ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <option value="">Seleccionar</option>
                                 {participants.map(p => (
@@ -155,7 +156,8 @@ export const MatchModal: React.FC<MatchModalProps> = ({ isOpen, onClose, onSave,
                             <select
                                 value={player2Id}
                                 onChange={e => setPlayer2Id(e.target.value)}
-                                className="w-full bg-stone-950 border border-stone-800 rounded-lg p-2 text-white focus:border-gold-500 outline-none"
+                                disabled={!!existingMatch}
+                                className={`w-full bg-stone-950 border border-stone-800 rounded-lg p-2 text-white focus:border-gold-500 outline-none ${existingMatch ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <option value="">Seleccionar (o BYE)</option>
                                 {participants.map(p => (

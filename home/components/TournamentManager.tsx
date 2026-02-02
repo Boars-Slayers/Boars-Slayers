@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Tournament } from '../types';
-import { Trophy, Calendar, Users, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, X } from 'lucide-react';
+import { Trophy, Calendar, Users, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, X, Wand2 } from 'lucide-react';
 import { MatchModal } from './tournaments/MatchModal';
 import { MatchGridAdmin } from './tournaments/MatchGridAdmin';
 
@@ -147,6 +147,68 @@ export const TournamentManager: React.FC = () => {
             alert('Error al eliminar el participante');
         } else {
             setParticipants(participants.filter(p => p.id !== participantId));
+        }
+    };
+
+    const handleGenerateFixture = async () => {
+        if (!participants || participants.length < 2) {
+            alert('Se necesitan al menos 2 participantes para generar el fixture.');
+            return;
+        }
+
+        if (!confirm('Esto generará todos los partidos de la liga. Si ya existen partidos, se recomienda borrarlos primero. ¿Continuar?')) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Round Robin Algorithm (Circle Method)
+            const players = participants.map(p => p.user_id);
+            if (players.length % 2 !== 0) {
+                players.push(null); // Dummy player for odd number of teams logic
+            }
+
+            const totalRounds = players.length - 1;
+            const matchesPerRound = players.length / 2;
+            const newMatches = [];
+
+            let rotation = [...players];
+
+            for (let round = 0; round < totalRounds; round++) {
+                for (let match = 0; match < matchesPerRound; match++) {
+                    const p1 = rotation[match];
+                    const p2 = rotation[rotation.length - 1 - match];
+
+                    if (p1 && p2) { // Determine real match vs Bye
+                        newMatches.push({
+                            tournament_id: currentTournament.id,
+                            round: round + 1,
+                            match_number: match + 1,
+                            player1_id: p1,
+                            player2_id: p2,
+                            status: 'scheduled'
+                        });
+                    }
+                }
+
+                // Rotate array for next round (keep first index fixed, rotate the rest)
+                const fixed = rotation[0];
+                const tail = rotation.slice(1);
+                tail.unshift(tail.pop()!);
+                rotation = [fixed, ...tail];
+            }
+
+            const { error } = await supabase.from('matches').insert(newMatches);
+            if (error) throw error;
+
+            alert('Fixture generado correctamente!');
+            fetchMatches(currentTournament.id!);
+
+        } catch (error) {
+            console.error('Error generating fixture:', error);
+            alert('Error al generar el fixture.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -676,6 +738,20 @@ export const TournamentManager: React.FC = () => {
                                         <Trophy size={20} className="text-gold-500" />
                                         Gestión de Partidos ({matches.length})
                                     </h4>
+                                </div>
+
+                                <div className="flex justify-between items-center mb-6">
+                                    <div className="flex gap-2">
+                                        {currentTournament.bracket_type === 'round_robin' && matches.length === 0 && (
+                                            <button
+                                                onClick={handleGenerateFixture}
+                                                disabled={loading}
+                                                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors font-bold shadow-lg shadow-purple-900/20"
+                                            >
+                                                <Wand2 size={16} /> Generar Fixture (Liga)
+                                            </button>
+                                        )}
+                                    </div>
                                     <button
                                         onClick={() => {
                                             setEditingMatch(null);
