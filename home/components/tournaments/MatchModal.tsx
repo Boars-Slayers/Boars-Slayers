@@ -147,7 +147,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({ isOpen, onClose, onSave,
                             >
                                 <option value="">Seleccionar</option>
                                 {participants.map(p => (
-                                    <option key={p.user_id} value={p.user_id}>{p.profiles?.username}</option>
+                                    <option key={p.user_id} value={p.user_id}>{p.user?.username || 'Usuario Desconocido'}</option>
                                 ))}
                             </select>
                         </div>
@@ -161,7 +161,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({ isOpen, onClose, onSave,
                             >
                                 <option value="">Seleccionar (o BYE)</option>
                                 {participants.map(p => (
-                                    <option key={p.user_id} value={p.user_id}>{p.profiles?.username}</option>
+                                    <option key={p.user_id} value={p.user_id}>{p.user?.username || 'Usuario Desconocido'}</option>
                                 ))}
                             </select>
                         </div>
@@ -179,8 +179,8 @@ export const MatchModal: React.FC<MatchModalProps> = ({ isOpen, onClose, onSave,
                                     className="w-full bg-stone-950 border border-stone-800 rounded-lg p-2 text-white focus:border-gold-500 outline-none"
                                 >
                                     <option value="">Pendiente</option>
-                                    {player1Id && <option value={player1Id}>{participants.find(p => p.user_id === player1Id)?.profiles?.username}</option>}
-                                    {player2Id && <option value={player2Id}>{participants.find(p => p.user_id === player2Id)?.profiles?.username}</option>}
+                                    {player1Id && <option value={player1Id}>{participants.find(p => p.user_id === player1Id)?.user?.username}</option>}
+                                    {player2Id && <option value={player2Id}>{participants.find(p => p.user_id === player2Id)?.user?.username}</option>}
                                 </select>
                             </div>
                             <div>

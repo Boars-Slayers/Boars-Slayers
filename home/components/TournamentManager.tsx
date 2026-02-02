@@ -247,6 +247,46 @@ export const TournamentManager: React.FC = () => {
         }
     };
 
+    const handleDeleteMatch = async (matchId: string) => {
+        if (!confirm('¿Estás seguro de eliminar este partido?')) return;
+
+        const { error } = await supabase
+            .from('matches')
+            .delete()
+            .eq('id', matchId);
+
+        if (error) {
+            console.error('Error deleting match:', error);
+            alert('Error al eliminar el partido');
+        } else {
+            setMatches(matches.filter(m => m.id !== matchId));
+        }
+    };
+
+    const handleDeleteAllMatches = async () => {
+        if (!confirm('¿ESTÁS SEGURO? Esto eliminará TODOS los partidos y resultados del torneo. Esta acción es irreversible.')) return;
+
+        // Double confirmation for safety
+        if (!confirm('Confirma nuevamente: Se borrarán TODOS los partidos de este torneo. ¿Continuar?')) return;
+
+        setLoading(true);
+        try {
+            const { error } = await supabase
+                .from('matches')
+                .delete()
+                .eq('tournament_id', currentTournament.id);
+
+            if (error) throw error;
+
+            setMatches([]);
+        } catch (error) {
+            console.error('Error deleting all matches:', error);
+            alert('Error al eliminar los partidos');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
         setUploading(true);
@@ -751,6 +791,15 @@ export const TournamentManager: React.FC = () => {
                                                 <Wand2 size={16} /> Generar Fixture (Liga)
                                             </button>
                                         )}
+                                        {matches.length > 0 && (
+                                            <button
+                                                onClick={handleDeleteAllMatches}
+                                                disabled={loading}
+                                                className="flex items-center gap-2 px-4 py-2 bg-red-900/30 text-red-500 border border-red-900/50 hover:bg-red-900/50 rounded-lg transition-colors font-bold text-xs uppercase"
+                                            >
+                                                <Trash2 size={16} /> Borrar Todo
+                                            </button>
+                                        )}
                                     </div>
                                     <button
                                         onClick={() => {
@@ -776,6 +825,7 @@ export const TournamentManager: React.FC = () => {
                                                 setEditingMatch(match);
                                                 setIsMatchModalOpen(true);
                                             }}
+                                            onDeleteMatch={handleDeleteMatch}
                                         />
                                     )}
                                 </div>
