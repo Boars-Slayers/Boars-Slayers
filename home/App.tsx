@@ -8,6 +8,8 @@ import { JoinModal } from './components/JoinModal';
 import { Routes, Route } from 'react-router-dom';
 import { ProfilePage } from './components/ProfilePage';
 import { AdminPanel } from './components/AdminPanel';
+import { MasterPanel } from './components/MasterPanel';
+import { MemberPanel } from './components/MemberPanel';
 import { TournamentList } from './components/tournaments/TournamentList';
 import { TournamentDetails } from './components/tournaments/TournamentDetails';
 import { ShowmatchesPage } from './components/ShowmatchesPage';
@@ -76,6 +78,8 @@ const App: React.FC = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/user/:username" element={<ProfilePage />} />
         <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/master-panel" element={<MasterPanel />} />
+        <Route path="/member-panel" element={<MemberPanel />} />
         <Route path="/tournaments" element={
           <div className="min-h-screen bg-stone-950 text-gray-200">
             <Navbar />
