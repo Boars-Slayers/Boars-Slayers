@@ -21,34 +21,6 @@ export const MasterPanel: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [editingBadgesUser, setEditingBadgesUser] = useState<{ id: string, username: string } | null>(null);
     const [isCreatingUser, setIsCreatingUser] = useState(false);
-    const [editingNicknameUser, setEditingNicknameUser] = useState<{ id: string, username: string, currentNickname?: string } | null>(null);
-    const [nicknameInput, setNicknameInput] = useState('');
-
-    const handleNicknameClick = (user: UserProfile) => {
-        setEditingNicknameUser({
-            id: user.id,
-            username: user.username,
-            currentNickname: (user as any).nickname
-        });
-        setNicknameInput((user as any).nickname || '');
-    };
-
-    const saveNickname = async () => {
-        if (!editingNicknameUser) return;
-
-        const { error } = await supabase
-            .from('profiles')
-            .update({ pending_nickname: nicknameInput })
-            .eq('id', editingNicknameUser.id);
-
-        if (error) {
-            console.error('Error updating nickname:', error);
-            alert('Error al proponer apodo');
-        } else {
-            setEditingNicknameUser(null);
-            alert('Apodo propuesto correctamente. El usuario deberá aceptarlo.');
-        }
-    };
 
 
 
