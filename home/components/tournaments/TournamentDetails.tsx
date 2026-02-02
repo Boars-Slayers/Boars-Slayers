@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Calendar, Users, Trophy as TrophyIcon, ArrowLeft, Loader, Shield, Gift, CheckCircle, Lock, Image as ImageIcon } from 'lucide-react';
+import { Calendar, Users, Trophy as TrophyIcon, ArrowLeft, Loader, Shield, Gift, CheckCircle, Lock, Image as ImageIcon, Download } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
 
 import { StandingsTable } from './StandingsTable';
 import { BracketView } from './BracketView';
+import { UpcomingMatches } from './UpcomingMatches';
 import { MomentCard } from '../Moments/MomentCard';
 
 export const TournamentDetails: React.FC = () => {
@@ -187,6 +188,8 @@ export const TournamentDetails: React.FC = () => {
             {activeTab === 'info' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-2">
                     <div className="lg:col-span-2 space-y-8">
+                        <UpcomingMatches matches={matches} participants={participants} />
+
                         <div className="bg-stone-900/40 border border-stone-800 rounded-2xl p-8">
                             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                                 <Shield className="text-gold-500" size={20} /> Descripción
@@ -296,6 +299,18 @@ export const TournamentDetails: React.FC = () => {
                                             </div>
                                         ) : (
                                             <div className="text-center text-stone-600 text-xs italic">Pendiente</div>
+                                        )}
+
+                                        {match.replay_url && (
+                                            <a
+                                                href={match.replay_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="absolute -top-2 -right-2 p-2 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-green-500 hover:border-green-500/50 shadow-xl transition-all z-10"
+                                                title="Descargar Partida (Rec)"
+                                            >
+                                                <Download size={14} />
+                                            </a>
                                         )}
                                     </div>
                                 ))}

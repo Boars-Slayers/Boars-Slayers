@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { X, Save, Trophy } from 'lucide-react';
+import { X, Save, Trophy, Upload, File } from 'lucide-react';
 
 interface MatchModalProps {
     isOpen: boolean;
@@ -17,6 +17,8 @@ export const MatchModal: React.FC<MatchModalProps> = ({ isOpen, onClose, onSave,
     const [player2Id, setPlayer2Id] = useState('');
     const [winnerId, setWinnerId] = useState('');
     const [score, setScore] = useState('');
+    const [recordingUrl, setRecordingUrl] = useState('');
+    const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -26,16 +28,45 @@ export const MatchModal: React.FC<MatchModalProps> = ({ isOpen, onClose, onSave,
                 setPlayer2Id(existingMatch.player2_id || '');
                 setWinnerId(existingMatch.winner_id || '');
                 setScore(existingMatch.result_score || '');
+                setRecordingUrl(existingMatch.replay_url || '');
             } else {
                 setPlayer1Id('');
                 setPlayer2Id('');
                 setWinnerId('');
                 setScore('');
+                setRecordingUrl('');
             }
         }
     }, [isOpen, existingMatch]);
 
     if (!isOpen) return null;
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${tournamentId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+                .from('replays')
+                .upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('replays')
+                .getPublicUrl(fileName);
+
+            setRecordingUrl(publicUrl);
+        } catch (error) {
+            console.error('Error uploading replay:', error);
+            alert('Error al subir la partida grabada');
+        } finally {
+            setUploading(false);
+        }
+    };
 
     const handleSave = async () => {
         if (!player1Id) {
@@ -51,6 +82,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({ isOpen, onClose, onSave,
                 player2_id: player2Id || null,
                 winner_id: winnerId || null,
                 result_score: score || null,
+                replay_url: recordingUrl || null,
                 // If it's a new match, use the passed round, otherwise keep existing
                 round: existingMatch ? existingMatch.round : (round || 1),
                 status: winnerId ? 'completed' : 'scheduled'
@@ -158,6 +190,43 @@ export const MatchModal: React.FC<MatchModalProps> = ({ isOpen, onClose, onSave,
                                     placeholder="0-0"
                                     className="w-full bg-stone-950 border border-stone-800 rounded-lg p-2 text-white focus:border-gold-500 outline-none"
                                 />
+                            </div>
+                        </div>
+
+                        {/* Replay Upload */}
+                        <div className="pt-4 border-t border-stone-800 mt-4">
+                            <h4 className="text-sm font-medium text-stone-300 mb-3 flex items-center gap-2">
+                                <File size={16} className="text-gold-500" />
+                                Partida Grabada (Rec)
+                            </h4>
+                            <div className="flex items-center gap-3">
+                                {recordingUrl ? (
+                                    <div className="flex-1 bg-stone-950 border border-stone-800 rounded-lg p-2.5 flex items-center justify-between">
+                                        <span className="text-xs text-green-500 font-bold truncate">Archivo subido correctamente</span>
+                                        <button onClick={() => setRecordingUrl('')} className="text-stone-500 hover:text-red-500">
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="file"
+                                            onChange={handleFileUpload}
+                                            disabled={uploading}
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                        />
+                                        <div className="bg-stone-950 border border-stone-800 rounded-lg p-2.5 flex items-center justify-center gap-2 text-stone-400 hover:text-white transition-colors">
+                                            {uploading ? (
+                                                <span className="text-xs animate-pulse">Subiendo...</span>
+                                            ) : (
+                                                <>
+                                                    <Upload size={16} />
+                                                    <span className="text-xs font-medium">Subir archivo (.zip, .aoe2record)</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

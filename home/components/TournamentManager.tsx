@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Tournament } from '../types';
-import { Trophy, Calendar, Users, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, X, Settings } from 'lucide-react';
+import { Trophy, Calendar, Users, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, X } from 'lucide-react';
 import { MatchModal } from './tournaments/MatchModal';
+import { MatchGridAdmin } from './tournaments/MatchGridAdmin';
 
 export const TournamentManager: React.FC = () => {
     const [uploading, setUploading] = useState(false);
@@ -692,78 +693,23 @@ export const TournamentManager: React.FC = () => {
                                             No hay partidos registrados. Haz clic en "Agregar Partido" para crear uno.
                                         </div>
                                     ) : (
-                                        <div className="divide-y divide-stone-900">
-                                            {matches.map((match) => (
-                                                <div key={match.id} className="flex items-center justify-between p-4 group hover:bg-stone-900/50 transition-colors">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-3 mb-1">
-                                                            <span className="text-xs font-bold text-stone-600 uppercase tracking-wider">
-                                                                Ronda {match.round} - Partido {match.match_number}
-                                                            </span>
-                                                            {match.status === 'completed' && (
-                                                                <span className="px-2 py-0.5 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-[10px] font-bold uppercase tracking-wider">
-                                                                    Finalizado
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <span className={`font-bold ${match.winner_id === match.player1_id ? 'text-gold-400' : 'text-stone-300'}`}>
-                                                                {match.p1?.username || 'TBD'}
-                                                            </span>
-                                                            <span className="text-stone-600 text-xs font-black">VS</span>
-                                                            <span className={`font-bold ${match.winner_id === match.player2_id ? 'text-gold-400' : 'text-stone-300'}`}>
-                                                                {match.p2?.username || 'TBD'}
-                                                            </span>
-                                                            {match.result_score && (
-                                                                <span className="ml-3 text-gold-500 font-mono font-bold tracking-wider bg-gold-900/10 px-2 py-0.5 rounded">
-                                                                    {match.result_score}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button
-                                                            onClick={() => {
-                                                                setEditingMatch(match);
-                                                                setIsMatchModalOpen(true);
-                                                            }}
-                                                            className="p-1.5 text-stone-500 hover:text-gold-500 hover:bg-gold-500/10 rounded transition-all"
-                                                            title="Editar partido"
-                                                        >
-                                                            <Settings size={16} />
-                                                        </button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (!confirm('¿Eliminar este partido?')) return;
-                                                                const { error } = await supabase
-                                                                    .from('matches')
-                                                                    .delete()
-                                                                    .eq('id', match.id);
-                                                                if (error) {
-                                                                    console.error('Error deleting match:', error);
-                                                                    alert('Error al eliminar el partido');
-                                                                } else {
-                                                                    fetchMatches(currentTournament.id!);
-                                                                }
-                                                            }}
-                                                            className="p-1.5 text-stone-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
-                                                            title="Eliminar partido"
-                                                        >
-                                                            <X size={16} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        <MatchGridAdmin
+                                            matches={matches}
+                                            participants={participants}
+                                            onEditMatch={(match) => {
+                                                setEditingMatch(match);
+                                                setIsMatchModalOpen(true);
+                                            }}
+                                        />
                                     )}
                                 </div>
 
                                 <p className="text-[10px] text-stone-600 mt-3 italic leading-relaxed">
-                                    Aquí puedes agregar partidos pasados con sus resultados, o partidos futuros sin resultado. Los partidos se mostrarán en la página pública del torneo.
+                                    Aquí puedes agregar partidos pasados con sus resultados, subir grabaciones (recs), o programar partidos futuros.
                                 </p>
-                            </div>
+                            </div >
                         )}
-                    </div>
+                    </div >
 
                     <div className="flex justify-end gap-3 mt-8 border-t border-stone-800 pt-6">
                         <button
@@ -779,7 +725,7 @@ export const TournamentManager: React.FC = () => {
                             <Save size={18} /> Guardar Cambios
                         </button>
                     </div>
-                </div>
+                </div >
             ) : (
                 <div className="grid grid-cols-1 gap-4">
                     {tournaments.length === 0 && !loading ? (
@@ -864,6 +810,6 @@ export const TournamentManager: React.FC = () => {
                 existingMatch={editingMatch}
                 round={1}
             />
-        </div>
+        </div >
     );
 };
