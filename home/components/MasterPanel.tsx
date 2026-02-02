@@ -166,6 +166,27 @@ export const MasterPanel: React.FC = () => {
         }
     };
 
+    const [fullEditingUser, setFullEditingUser] = useState<UserProfile | null>(null);
+
+    // ... (existing code)
+
+    const handleUpdateUser = async (userId: string, updates: any) => {
+        const { error } = await supabase
+            .from('profiles')
+            .update(updates)
+            .eq('id', userId);
+
+        if (error) {
+            console.error('Error updating user:', error);
+            alert('Error al actualizar usuario');
+        } else {
+            alert('Usuario actualizado correctamente');
+            setFullEditingUser(null);
+            fetchData();
+        }
+    };
+
+
     const filteredUsers = users.filter(user => {
         const matchesType = filter === 'all' ||
             (filter === 'candidate' && user.role === 'candidate') ||
@@ -183,6 +204,7 @@ export const MasterPanel: React.FC = () => {
             <Navbar />
 
             <main className="max-w-7xl mx-auto px-6 pt-32 pb-12">
+                {/* ... (Header code remains same) ... */}
                 <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-10 gap-4">
                     <div>
                         <h1 className="text-4xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-gold-500 flex items-center gap-3">
@@ -190,8 +212,7 @@ export const MasterPanel: React.FC = () => {
                         </h1>
                         <p className="text-stone-400 mt-2">Control total sobre el clan y sus recursos.</p>
                     </div>
-
-                    {/* Main Tabs */}
+                    {/* ... (Tabs code remains same) ... */}
                     <div className="flex bg-stone-900/50 p-1 rounded-lg border border-white/5 overflow-x-auto">
                         <button
                             onClick={() => setActiveTab('users')}
@@ -348,6 +369,17 @@ export const MasterPanel: React.FC = () => {
                                                         </td>
                                                         <td className="p-6 text-right">
                                                             <div className="flex items-center justify-end gap-2 opacity-100 group-hover:opacity-100 transition-opacity">
+
+                                                                {/* MASTER EDIT BUTTON */}
+                                                                <button
+                                                                    onClick={() => setFullEditingUser(user)}
+                                                                    title="Editar Perfil Completo"
+                                                                    className="p-2 ml-2 bg-purple-600/20 text-purple-400 hover:bg-purple-600/40 rounded-lg border border-purple-500/50 transition-colors"
+                                                                >
+                                                                    <Settings size={18} />
+                                                                </button>
+
+
                                                                 {user.role === 'candidate' ? (
                                                                     <>
                                                                         <button
@@ -367,16 +399,6 @@ export const MasterPanel: React.FC = () => {
                                                                     </>
                                                                 ) : (
                                                                     <div className="relative group/select">
-                                                                        <select
-                                                                            value={user.role}
-                                                                            onChange={(e) => handlePrimaryRoleUpdate(user.id, e.target.value)}
-                                                                            className="appearance-none bg-stone-950 text-stone-300 border border-stone-800 rounded-lg py-1.5 pl-3 pr-8 text-sm focus:border-gold-600 focus:ring-1 focus:ring-gold-600 outline-none cursor-pointer hover:bg-stone-900"
-                                                                        >
-                                                                            {roles.map(r => (
-                                                                                <option key={r.id} value={r.name}>{r.name.charAt(0).toUpperCase() + r.name.slice(1)}</option>
-                                                                            ))}
-                                                                        </select>
-                                                                        <Settings size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" />
                                                                     </div>
                                                                 )}
 
@@ -389,14 +411,6 @@ export const MasterPanel: React.FC = () => {
                                                                         <UserX size={18} />
                                                                     </button>
                                                                 )}
-
-                                                                <button
-                                                                    onClick={() => handleNicknameClick(user)}
-                                                                    title="Proponer Apodo"
-                                                                    className="p-2 ml-2 bg-purple-900/20 text-purple-500 hover:bg-purple-900/40 rounded-lg border border-purple-800/50 transition-colors"
-                                                                >
-                                                                    <Settings size={18} />
-                                                                </button>
                                                                 <button
                                                                     onClick={() => setEditingBadgesUser({ id: user.id, username: user.username })}
                                                                     title="Gestionar Insignias"
@@ -441,41 +455,83 @@ export const MasterPanel: React.FC = () => {
                         onUserCreated={() => fetchData()}
                     />
                 )}
-                {/* Nickname Modal */}
-                {editingNicknameUser && (
+
+                {/* Full User Editor Modal */}
+                {fullEditingUser && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                        <div className="bg-stone-900 border border-stone-800 rounded-xl p-6 w-full max-w-md animate-in fade-in zoom-in-95">
-                            <h3 className="text-xl font-bold text-white mb-4">Proponer Apodo para {editingNicknameUser.username}</h3>
-                            <p className="text-stone-400 text-sm mb-4">
-                                El usuario recibirá una notificación para aceptar o rechazar este apodo.
-                                {editingNicknameUser.currentNickname && <span> Actual: <span className="text-gold-500">{editingNicknameUser.currentNickname}</span></span>}
-                            </p>
+                        <div className="bg-stone-900 border border-purple-500/30 rounded-xl p-6 w-full max-w-md animate-in fade-in zoom-in-95 shadow-[0_0_50px_rgba(168,85,247,0.15)]">
+                            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                <Crown className="text-purple-500" size={24} /> Editar Guerrero
+                            </h3>
 
-                            <input
-                                type="text"
-                                value={nicknameInput}
-                                onChange={(e) => setNicknameInput(e.target.value)}
-                                placeholder="Ej: El Destructor"
-                                className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-gold-500 outline-none mb-6"
-                            />
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Nombre de Batalla</label>
+                                    <input
+                                        type="text"
+                                        defaultValue={fullEditingUser.username}
+                                        id="edit-username"
+                                        className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Avatar URL</label>
+                                    <input
+                                        type="text"
+                                        defaultValue={fullEditingUser.avatar_url}
+                                        id="edit-avatar"
+                                        className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none text-xs"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Rol Principal</label>
+                                    <select
+                                        defaultValue={fullEditingUser.role}
+                                        id="edit-role"
+                                        className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none"
+                                    >
+                                        <option value="member">Miembro</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="web_master">Web Master</option>
+                                        <option value="candidate">Candidato</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Steam ID</label>
+                                    <input
+                                        type="text"
+                                        defaultValue={fullEditingUser.steam_id || ''}
+                                        id="edit-steam"
+                                        className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none font-mono"
+                                    />
+                                </div>
+                            </div>
 
-                            <div className="flex justify-end gap-3">
+                            <div className="flex justify-end gap-3 mt-8">
                                 <button
-                                    onClick={() => setEditingNicknameUser(null)}
+                                    onClick={() => setFullEditingUser(null)}
                                     className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg transition-colors"
                                 >
                                     Cancelar
                                 </button>
                                 <button
-                                    onClick={saveNickname}
-                                    className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-stone-950 font-bold rounded-lg transition-colors"
+                                    onClick={() => {
+                                        const username = (document.getElementById('edit-username') as HTMLInputElement).value;
+                                        const avatar_url = (document.getElementById('edit-avatar') as HTMLInputElement).value;
+                                        const role = (document.getElementById('edit-role') as HTMLSelectElement).value;
+                                        const steam_id = (document.getElementById('edit-steam') as HTMLInputElement).value;
+
+                                        handleUpdateUser(fullEditingUser.id, { username, avatar_url, role, steam_id });
+                                    }}
+                                    className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors shadow-lg shadow-purple-900/20"
                                 >
-                                    Proponer
+                                    Guardar Cambios
                                 </button>
                             </div>
                         </div>
                     </div>
                 )}
+
             </main>
             <Footer />
         </div>
