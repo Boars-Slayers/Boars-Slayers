@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Member } from '../types';
-import { X, Trophy, Crown, TrendingUp, Swords, User, Loader2 } from 'lucide-react';
+import { X, Trophy, Crown, TrendingUp, Swords, User, Loader2, Settings, Save } from 'lucide-react';
 import { fetchPlayerStats, PlayerStats } from '../lib/aoe';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../AuthContext';
@@ -119,6 +119,49 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
     };
 
 
+    // Web Master / Editing State
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState(member.name);
+    const [editRole, setEditRole] = useState(member.role);
+    const [editAvatar, setEditAvatar] = useState(member.avatarUrl);
+    const [saving, setSaving] = useState(false);
+
+    const isWebMaster = currentUser?.app_role === 'web_master' || currentUser?.role === 'web_master'; // Check both for compatibility
+
+    // Available roles
+    const availableRoles = ['member', 'candidate', 'admin'];
+    if (isWebMaster) {
+        availableRoles.push('web_master');
+    }
+
+    const handleSaveProfile = async () => {
+        setSaving(true);
+        try {
+            const updates: any = {
+                username: editName,
+                role: editRole,
+                avatar_url: editAvatar
+            };
+
+            const { error } = await supabase
+                .from('profiles')
+                .update(updates)
+                .eq('id', member.id);
+
+            if (error) throw error;
+
+            setIsEditing(false);
+            // Optional: Refresh parent or local state if needed. 
+            // Ideally we should call a prop onUpdate, but for now we rely on re-opening or context updates.
+            alert('Perfil actualizado correctamente');
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            alert('Error al actualizar el perfil');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
             {/* Backdrop */}
@@ -142,46 +185,113 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
                     <X size={24} />
                 </button>
 
+                {/* Web Master Edit Button */}
+                {isWebMaster && !isEditing && (
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-gold-900/50 text-gold-500 border border-gold-600/30 rounded-lg hover:bg-gold-900 cursor-pointer z-10 text-xs font-bold uppercase tracking-wider"
+                    >
+                        <Settings size={14} /> Editar (Web Master)
+                    </button>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-3">
                     {/* Left Column: Avatar & Identity */}
                     <div className="p-8 flex flex-col items-center bg-black/20 md:border-r border-gold-600/20">
+
+                        {/* Avatar */}
                         <div className="relative w-32 h-32 mb-6 group">
                             <div className="absolute inset-0 rounded-full bg-gold-600 blur opacity-20 group-hover:opacity-40 transition-opacity animate-pulse"></div>
                             <img
-                                src={member.avatarUrl}
+                                src={isEditing ? editAvatar : member.avatarUrl}
                                 alt={member.name}
                                 className="relative w-full h-full rounded-full border-4 border-stone-800 object-cover shadow-xl"
                             />
-                            <div className="absolute -bottom-2 -right-2 bg-stone-900 rounded-full p-2 border border-gold-600 text-gold-500">
-                                {['Leader', 'Admin'].includes(member.role) ? <Crown size={16} /> : <Swords size={16} />}
-                            </div>
-                        </div>
-
-                        <h2 className="text-2xl font-serif font-bold text-white text-center mb-1">{member.name}</h2>
-
-                        <div className="flex flex-wrap justify-center gap-1.5 mb-6">
-                            {member.roles && member.roles.length > 0 ? (
-                                member.roles.map((r, i) => (
-                                    <span
-                                        key={i}
-                                        className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-widest font-bold border"
-                                        style={{
-                                            backgroundColor: `${r.color}20`,
-                                            color: r.color,
-                                            borderColor: `${r.color}40`
-                                        }}
-                                    >
-                                        {r.name}
-                                    </span>
-                                ))
-                            ) : (
-                                <span className="px-3 py-1 rounded-full bg-gold-900/30 text-gold-400 text-xs uppercase tracking-widest font-bold border border-gold-900/50">
-                                    {member.role}
-                                </span>
+                            {!isEditing && (
+                                <div className="absolute -bottom-2 -right-2 bg-stone-900 rounded-full p-2 border border-gold-600 text-gold-500">
+                                    {['Leader', 'Admin', 'web_master'].includes(member.role) ? <Crown size={16} /> : <Swords size={16} />}
+                                </div>
                             )}
                         </div>
 
-                        {onViewProfile && (
+                        {/* Edit Mode Inputs */}
+                        {isEditing ? (
+                            <div className="w-full space-y-3 mb-6">
+                                <div>
+                                    <label className="text-[10px] text-stone-500 uppercase font-bold">Nombre</label>
+                                    <input
+                                        type="text"
+                                        value={editName}
+                                        onChange={e => setEditName(e.target.value)}
+                                        className="w-full bg-stone-950 border border-stone-700 rounded p-1.5 text-white text-sm text-center focus:border-gold-500 outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-stone-500 uppercase font-bold">Avatar URL</label>
+                                    <input
+                                        type="text"
+                                        value={editAvatar}
+                                        onChange={e => setEditAvatar(e.target.value)}
+                                        className="w-full bg-stone-950 border border-stone-700 rounded p-1.5 text-white text-xs text-center focus:border-gold-500 outline-none" // truncate removed for editing
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-stone-500 uppercase font-bold">Rol</label>
+                                    <select
+                                        value={editRole}
+                                        onChange={e => setEditRole(e.target.value)}
+                                        className="w-full bg-stone-950 border border-stone-700 rounded p-1.5 text-white text-sm text-center focus:border-gold-500 outline-none"
+                                    >
+                                        {availableRoles.map(r => (
+                                            <option key={r} value={r}>{r.toUpperCase().replace('_', ' ')}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="flex gap-2 justify-center mt-2">
+                                    <button
+                                        onClick={() => setIsEditing(false)}
+                                        className="p-1.5 text-red-400 hover:bg-red-900/20 rounded"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                    <button
+                                        onClick={handleSaveProfile}
+                                        disabled={saving}
+                                        className="p-1.5 text-green-400 hover:bg-green-900/20 rounded font-bold flex items-center gap-1"
+                                    >
+                                        <Save size={16} /> {saving ? '...' : ''}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <h2 className="text-2xl font-serif font-bold text-white text-center mb-1">{member.name}</h2>
+
+                                <div className="flex flex-wrap justify-center gap-1.5 mb-6">
+                                    {member.roles && member.roles.length > 0 ? (
+                                        member.roles.map((r, i) => (
+                                            <span
+                                                key={i}
+                                                className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-widest font-bold border"
+                                                style={{
+                                                    backgroundColor: `${r.color}20`,
+                                                    color: r.color,
+                                                    borderColor: `${r.color}40`
+                                                }}
+                                            >
+                                                {r.name}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span className="px-3 py-1 rounded-full bg-gold-900/30 text-gold-400 text-xs uppercase tracking-widest font-bold border border-gold-900/50">
+                                            {member.role.replace('_', ' ')}
+                                        </span>
+                                    )}
+                                </div>
+                            </>
+                        )}
+
+                        {!isEditing && onViewProfile && (
                             <button
                                 onClick={onViewProfile}
                                 className="w-full py-2 bg-stone-800 hover:bg-stone-700 text-white rounded border border-gold-600/30 transition-all font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2"
