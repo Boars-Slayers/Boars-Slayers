@@ -60,9 +60,17 @@ export const ProfilePage: React.FC = () => {
                         streak: data.streak,
                         rank: data.rank_1v1
                     });
-                } else if (data.steam_id || data.aoe_profile_id) {
+                } else if (data.steam_id || data.aoe_profile_id || data.aoe_insights_url) {
                     // Fetch only if not cached and we have at least one ID
-                    fetchPlayerStats(data.steam_id, data.aoe_profile_id).then(setStats);
+                    let aoeId = data.aoe_profile_id;
+                    if (!aoeId && data.aoe_insights_url) {
+                        const match = data.aoe_insights_url.match(/\/user\/(\d+)/);
+                        if (match && match[1]) {
+                            aoeId = match[1];
+                        }
+                    }
+
+                    fetchPlayerStats(data.steam_id, aoeId).then(setStats);
                 }
 
                 // Fetch Moments
@@ -322,7 +330,7 @@ export const ProfilePage: React.FC = () => {
                                         <div className="w-16 h-16 rounded-xl bg-stone-900 border border-gold-600/30 p-1 group-hover/badge:border-gold-500 transition-all transform group-hover/badge:scale-105 shadow-lg">
                                             <img src={badge.image_url} alt="Badge" className="w-full h-full object-cover rounded-lg" />
                                         </div>
-                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-stone-900 text-white text-xs rounded-lg opacity-0 group-hover/badge:opacity-100 transition-all whitespace-nowrap pointer-events-none z-20 border border-gold-600/50 shadow-2xl backdrop-blur-md">
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-stone-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap pointer-events-none z-20 border border-gold-600/50 shadow-2xl backdrop-blur-md">
                                             <p className="font-bold text-gold-500 text-[10px] uppercase mb-1">Insignia</p>
                                             {badge.description}
                                         </div>

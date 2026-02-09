@@ -11,6 +11,7 @@ interface RankedMember {
     avatar_url: string;
     steam_id: string;
     aoe_profile_id?: string | null;
+    aoe_insights_url?: string | null;
     stats?: PlayerStats;
     rank?: number; // Global Rank
 }
@@ -43,25 +44,37 @@ export function RankingPage() {
 
             const validProfiles = profiles || [];
 
-            // 2. Map profiles to RankedMember
-            const membersList: RankedMember[] = validProfiles.map(p => ({
-                id: p.id,
-                username: p.username,
-                avatar_url: p.avatar_url,
-                steam_id: p.steam_id,
-                aoe_profile_id: p.aoe_profile_id,
-                rank: p.rank_1v1,
-                stats: p.elo_1v1 ? {
-                    steamId: p.steam_id || '',
-                    name: p.username,
-                    elo1v1: p.elo_1v1,
-                    eloTG: p.elo_tg,
-                    winRate1v1: p.win_rate_1v1,
-                    gamesPlayed: p.games_played,
-                    streak: p.streak,
-                    rank: p.rank_1v1
-                } : undefined
-            }));
+            // 2. Map profiles to RankedMember and sync logic
+            const membersList: RankedMember[] = validProfiles.map(p => {
+                let aoeId = p.aoe_profile_id;
+                // If aoe_profile_id is missing, try to extract from aoe_insights_url
+                if (!aoeId && p.aoe_insights_url) {
+                    const match = p.aoe_insights_url.match(/\/user\/(\d+)/);
+                    if (match && match[1]) {
+                        aoeId = match[1];
+                    }
+                }
+
+                return {
+                    id: p.id,
+                    username: p.username,
+                    avatar_url: p.avatar_url,
+                    steam_id: p.steam_id,
+                    aoe_profile_id: aoeId,
+                    aoe_insights_url: p.aoe_insights_url,
+                    rank: p.rank_1v1,
+                    stats: p.elo_1v1 ? {
+                        steamId: p.steam_id || '',
+                        name: p.username,
+                        elo1v1: p.elo_1v1,
+                        eloTG: p.elo_tg,
+                        winRate1v1: p.win_rate_1v1,
+                        gamesPlayed: p.games_played,
+                        streak: p.streak,
+                        rank: p.rank_1v1
+                    } : undefined
+                };
+            });
 
             // Sort by 1v1 ELO desc
             const sortedMembers = membersList.sort((a, b) => {
@@ -73,9 +86,9 @@ export function RankingPage() {
             setMembers(sortedMembers);
 
             // 4. Fetch Matches
-            const clanMatches = await getClanMatches(validProfiles.map((p: any) => ({
-                steamId: p.steam_id,
-                aoeProfileId: p.aoe_profile_id
+            const clanMatches = await getClanMatches(membersList.map((m: any) => ({
+                steamId: m.steam_id,
+                aoeProfileId: m.aoe_profile_id
             })));
             setMatches(clanMatches);
 
@@ -220,12 +233,12 @@ export function RankingPage() {
                                                                     <Link to={`/user/${member.username}`} className="text-sm font-medium text-white hover:text-amber-500 transition-colors">
                                                                         {member.username}
                                                                     </Link>
-                                                                    <div className="text-xs text-gray-500">Steam ID: {member.steam_id || (member.aoe_profile_id ? `ID: ${member.aoe_profile_id}` : 'N/A')}</div>
+                                                                    <div className="text-xs text-gray-500">Steam ID: {member.steam_id || (member.aoe_profile_id ? `PV: ${member.aoe_profile_id}` : 'N/A')}</div>
                                                                 </div>
                                                             </div>
-                                                            {(member.steam_id || member.aoe_profile_id) && (
+                                                            {(member.steam_id || member.aoe_profile_id || member.aoe_insights_url) && (
                                                                 <a
-                                                                    href={`https://www.aoe2insights.com/user/${member.aoe_profile_id || member.steam_id}/`}
+                                                                    href={member.aoe_insights_url || `https://www.aoe2insights.com/user/${member.aoe_profile_id || member.steam_id}/`}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="text-xs text-amber-500 hover:text-amber-400 underline ml-14"

@@ -33,11 +33,17 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
 
         setLoading(true);
         try {
+            // Extract AoE Profile ID from URL
+            // URL format example: https://www.aoe2insights.com/user/10383990/
+            const profileIdMatch = aoeUrl.match(/\/user\/(\d+)/);
+            const extractedProfileId = profileIdMatch ? profileIdMatch[1] : null;
+
             const { error } = await supabase
                 .from('profiles')
                 .update({
                     steam_id: steamId,
                     aoe_insights_url: aoeUrl,
+                    aoe_profile_id: extractedProfileId,
                     contact_email: email, // Changed from email to contact_email
                     phone_number: phone,
                     reason: reason,
@@ -49,9 +55,9 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
             if (error) throw error;
 
             // Sync stats immediately if steamId is provided
-            if (steamId) {
+            if (steamId || extractedProfileId) {
                 try {
-                    await syncPlayerStats(user.id, steamId);
+                    await syncPlayerStats(user.id, steamId, extractedProfileId);
                 } catch (err) {
                     console.error('Failed to sync stats on registration:', err);
                 }
