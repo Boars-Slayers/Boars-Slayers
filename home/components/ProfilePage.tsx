@@ -60,9 +60,9 @@ export const ProfilePage: React.FC = () => {
                         streak: data.streak,
                         rank: data.rank_1v1
                     });
-                } else if (data.steam_id) {
-                    // Fetch only if not cached
-                    fetchPlayerStats(data.steam_id).then(setStats);
+                } else if (data.steam_id || data.aoe_profile_id) {
+                    // Fetch only if not cached and we have at least one ID
+                    fetchPlayerStats(data.steam_id, data.aoe_profile_id).then(setStats);
                 }
 
                 // Fetch Moments
@@ -295,7 +295,7 @@ export const ProfilePage: React.FC = () => {
                     <div className="bg-stone-900 border border-gold-600/20 rounded-2xl p-6 shadow-xl">
                         <h4 className="text-xs font-black uppercase tracking-widest text-gold-500 mb-6">Información de Combate</h4>
                         <div className="space-y-4">
-                            <InfoRow label="Steam ID" value={profile.steam_id || 'Oculto'} />
+                            <InfoRow label="Steam ID" value={profile.steam_id || (profile.aoe_profile_id ? `PV: ${profile.aoe_profile_id}` : 'Oculto')} />
                             <InfoRow label="Miembro desde" value={new Date(profile.created_at).toLocaleDateString()} />
                             {stats && <InfoRow label="Partidas" value={stats.gamesPlayed.toString()} />}
 

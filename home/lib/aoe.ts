@@ -13,23 +13,28 @@ import { supabase } from './supabase';
 
 // Attempts to use available APIs (aoe2companion.com, etc)
 
-export const fetchPlayerStats = async (steamId: string): Promise<PlayerStats | null> => {
-    let cleanId = steamId.trim();
+export const fetchPlayerStats = async (steamId: string, aoeProfileId?: string | null): Promise<PlayerStats | null> => {
+    let cleanId = steamId?.trim() || '';
+
+    // If we have a profile ID, we can work even without valid Steam ID (if user data is messy)
+    if (!cleanId && !aoeProfileId) return null;
 
     if (cleanId.includes('steamcommunity.com')) {
         const matches = cleanId.match(/\/profiles\/(\d{17})/);
         if (matches && matches[1]) {
             cleanId = matches[1];
-        } else {
+        } else if (!aoeProfileId) {
+            // Only fail if we don't have a profile ID fallback
             return null;
         }
     }
 
-    if (!/^\d+$/.test(cleanId)) return null;
-
     try {
         const { data, error } = await supabase.functions.invoke('proxy-match-history', {
-            body: { steamId: cleanId }
+            body: {
+                steamId: cleanId,
+                profileId: aoeProfileId // Pass explicit profile ID if available
+            }
         });
 
         if (error || !data?.stats) {
@@ -59,8 +64,8 @@ export const fetchPlayerStats = async (steamId: string): Promise<PlayerStats | n
 /**
  * Fetches stats and saves them to Supabase to avoid hitting the API too often.
  */
-export const syncPlayerStats = async (profileId: string, steamId: string) => {
-    const stats = await fetchPlayerStats(steamId);
+export const syncPlayerStats = async (profileId: string, steamId: string, aoeProfileId?: string | null) => {
+    const stats = await fetchPlayerStats(steamId, aoeProfileId);
     if (!stats) return null;
 
     const { error } = await supabase
@@ -75,14 +80,17 @@ export const syncPlayerStats = async (profileId: string, steamId: string) => {
         })
         .eq('id', profileId);
 
-    if (error) console.error('Error saving stats to Supabase (rank_1v1 might be missing in schema?):', error);
+    if (error) console.error('Error saving stats to Supabase:', error);
     return stats;
 };
 
-export const fetchMatchHistory = async (steamId: string, _count: number = 10): Promise<import('../types').Match[]> => {
+export const fetchMatchHistory = async (steamId: string, _count: number = 10, aoeProfileId?: string | null): Promise<import('../types').Match[]> => {
     try {
         const { data, error } = await supabase.functions.invoke('proxy-match-history', {
-            body: { steamId }
+            body: {
+                steamId,
+                profileId: aoeProfileId
+            }
         });
 
         if (error) {
@@ -97,11 +105,11 @@ export const fetchMatchHistory = async (steamId: string, _count: number = 10): P
     }
 };
 
-export const getClanMatches = async (members: { steamId?: string }[]): Promise<import('../types').Match[]> => {
+export const getClanMatches = async (members: { steamId?: string, aoeProfileId?: string | null }[]): Promise<import('../types').Match[]> => {
     const allMatches: import('../types').Match[] = [];
-    const validMembers = members.filter(m => m.steamId);
+    const validMembers = members.filter(m => m.steamId || m.aoeProfileId);
 
-    const promises = validMembers.map(m => fetchMatchHistory(m.steamId!, 10));
+    const promises = validMembers.map(m => fetchMatchHistory(m.steamId || '', 10, m.aoeProfileId));
     const results = await Promise.all(promises);
 
     results.forEach(matches => allMatches.push(...matches));

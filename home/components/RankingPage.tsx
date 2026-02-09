@@ -10,6 +10,7 @@ interface RankedMember {
     username: string;
     avatar_url: string;
     steam_id: string;
+    aoe_profile_id?: string | null;
     stats?: PlayerStats;
     rank?: number; // Global Rank
 }
@@ -48,6 +49,7 @@ export function RankingPage() {
                 username: p.username,
                 avatar_url: p.avatar_url,
                 steam_id: p.steam_id,
+                aoe_profile_id: p.aoe_profile_id,
                 rank: p.rank_1v1,
                 stats: p.elo_1v1 ? {
                     steamId: p.steam_id || '',
@@ -71,7 +73,10 @@ export function RankingPage() {
             setMembers(sortedMembers);
 
             // 4. Fetch Matches
-            const clanMatches = await getClanMatches(validProfiles.map((p: any) => ({ steamId: p.steam_id })));
+            const clanMatches = await getClanMatches(validProfiles.map((p: any) => ({
+                steamId: p.steam_id,
+                aoeProfileId: p.aoe_profile_id
+            })));
             setMatches(clanMatches);
 
         } catch (err) {
@@ -85,10 +90,10 @@ export function RankingPage() {
         if (!members.length) return;
         setSyncing(true);
         try {
-            // Sync each member that has a steam_id
+            // Sync each member that has a steam_id or aoe_profile_id
             for (const member of members) {
-                if (member.steam_id) {
-                    await syncPlayerStats(member.id, member.steam_id);
+                if (member.steam_id || member.aoe_profile_id) {
+                    await syncPlayerStats(member.id, member.steam_id, member.aoe_profile_id);
                 }
             }
             // Refresh data from DB
@@ -215,12 +220,12 @@ export function RankingPage() {
                                                                     <Link to={`/user/${member.username}`} className="text-sm font-medium text-white hover:text-amber-500 transition-colors">
                                                                         {member.username}
                                                                     </Link>
-                                                                    <div className="text-xs text-gray-500">Steam ID: {member.steam_id}</div>
+                                                                    <div className="text-xs text-gray-500">Steam ID: {member.steam_id || (member.aoe_profile_id ? `ID: ${member.aoe_profile_id}` : 'N/A')}</div>
                                                                 </div>
                                                             </div>
-                                                            {member.steam_id && (
+                                                            {(member.steam_id || member.aoe_profile_id) && (
                                                                 <a
-                                                                    href={`https://www.aoe2insights.com/user/${member.steam_id}/`}
+                                                                    href={`https://www.aoe2insights.com/user/${member.aoe_profile_id || member.steam_id}/`}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="text-xs text-amber-500 hover:text-amber-400 underline ml-14"

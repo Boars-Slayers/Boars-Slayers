@@ -39,7 +39,7 @@ const fetchNightbotStats = async (profileId: string) => {
             };
         }
         console.log(`Nightbot response did not match pattern: ${text}`);
-        return null; // Return null if pattern doesn't match
+        return null;
     } catch (e: any) {
         console.error("Nightbot fetch error", e);
         return null;
@@ -52,69 +52,67 @@ serve(async (req) => {
     }
 
     try {
-        const { steamId } = await req.json();
+        const { steamId, profileId: explicitProfileId } = await req.json();
 
-        if (!steamId) {
-            throw new Error('Missing steamId');
+        if (!steamId && !explicitProfileId) {
+            throw new Error('Missing steamId or profileId');
         }
 
-        console.log(`Fetching profile for Steam ID: ${steamId}`);
+        let profileId = explicitProfileId;
 
-        // 1. Resolve Profile ID from Steam ID via Search Redirect
-        const searchUrl = `https://www.aoe2insights.com/?q=${steamId}`;
-        const searchRes = await fetch(searchUrl, {
-            redirect: 'follow',
-            headers: {
-                'User-Agent': PROJECT_URL
-            }
-        });
+        // Only search/resolve if no explicit Profile ID is provided
+        if (!profileId && steamId) {
+            console.log(`Resolving profile for Steam ID: ${steamId}`);
 
-        let finalUrl = searchRes.url;
-        console.log(`Resolved URL: ${finalUrl}`);
+            // Check if steamId is suspiciously a Discord ID (18-19 digits starting with 7 but not 765...)
+            // But AoE2Insights handles random strings gracefully (returns 404 or search page), so we can just try.
 
-        let profileId = null;
-        const profileIdMatch = finalUrl.match(/\/user\/(\d+)/);
+            // 1. Resolve Profile ID from Steam ID via Search Redirect
+            const searchUrl = `https://www.aoe2insights.com/?q=${steamId}`;
+            const searchRes = await fetch(searchUrl, {
+                redirect: 'follow',
+                headers: {
+                    'User-Agent': PROJECT_URL
+                }
+            });
 
-        if (profileIdMatch) {
-            profileId = profileIdMatch[1];
-        } else {
-            // If No redirect, try to parse the results page (fallback)
-            // But sometimes the redirect happens immediately. 
-            // If finalUrl is still /?q=..., then search failed or no redirect.
+            let finalUrl = searchRes.url;
+            console.log(`Resolved URL: ${finalUrl}`);
+            const profileIdMatch = finalUrl.match(/\/user\/(\d+)/);
 
-            // Note: If the search yields a list, we might need to pick the first one.
-            // Simplified from original: if redirect didn't happen to /user/, maybe we are on search page.
-            if (!finalUrl.includes("/user/")) {
-                console.log("No direct redirect to user page, trying to parse search results...");
-                const searchHtml = await searchRes.text();
-                const searchDoc = new DOMParser().parseFromString(searchHtml, "text/html");
-                // Find first user link in search results
-                const firstUserLink = searchDoc?.querySelector('a[href*="/user/"]');
-                const href = firstUserLink?.getAttribute('href');
-                if (href) {
-                    const match = href.match(/\/user\/(\d+)/);
-                    if (match) profileId = match[1];
+            if (profileIdMatch) {
+                profileId = profileIdMatch[1];
+            } else {
+                // Fallback parsing if redirect didn't happen directly to user page (search results page)
+                if (!finalUrl.includes("/user/")) {
+                    console.log("No direct redirect to user page, trying to parse search results...");
+                    const searchHtml = await searchRes.text();
+                    const searchDoc = new DOMParser().parseFromString(searchHtml, "text/html");
+                    const firstUserLink = searchDoc?.querySelector('a[href*="/user/"]');
+                    const href = firstUserLink?.getAttribute('href');
+                    if (href) {
+                        const match = href.match(/\/user\/(\d+)/);
+                        if (match) profileId = match[1];
+                    }
                 }
             }
+
+            // Fallback: assume steamId MIGHT be a profileId if it's numeric and short enough (<10 digits means < 1 billion, current profile IDs are around 1-100 million ranges, while steam IDs are huge)
+            if (!profileId && /^\d{1,10}$/.test(steamId)) {
+                profileId = steamId;
+            }
         }
 
-        // Fallback: assumes the steamId PASSED might be a profileId if it's short?
         if (!profileId) {
-            if (/^\d{1,10}$/.test(steamId)) {
-                // Assume it's a profile ID if it's numeric and reasonably short
-                profileId = steamId;
-            } else {
-                console.log("Could not resolve specific user profile from search.");
-                // Return empty stats but valid response so frontend handles 'not found' gracefully
-                return new Response(JSON.stringify({
-                    profileId: null,
-                    stats: null,
-                    matches: [],
-                    error: 'User not found'
-                }), {
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                });
-            }
+            console.log("Could not resolve specific user profile.");
+            return new Response(JSON.stringify({
+                profileId: null,
+                stats: null,
+                matches: [],
+                error: 'User not found'
+            }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
         }
 
         console.log(`Using Profile ID: ${profileId}`);
@@ -157,7 +155,6 @@ serve(async (req) => {
         if (winRateMatch) stats.winRate = parseFloat(winRateMatch[1]);
 
         // 3. ENHANCEMENT: Fetch from AoE2Companion Nightbot API (Overrides logic using Python script logic)
-        // This is requested by the user to ensure we match the python logic.
         if (profileId) {
             const nightbotStats = await fetchNightbotStats(profileId);
             if (nightbotStats) {
