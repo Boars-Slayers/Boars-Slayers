@@ -8,22 +8,24 @@ const corsHeaders = {
 
 const PROJECT_URL = "https://github.com/jesus18112003/AoEDash";
 
-const fetchNightbotStats = async (profileId: string) => {
-    const url = `https://data.aoe2companion.com/api/nightbot/rank?profile_id=${profileId}`;
+const fetchNightbotStats = async (profileId: string, leaderboardId: number = 3) => {
+    // leaderboard_id: 3 = 1v1 RM, 4 = Team RM
+    const url = `https://data.aoe2companion.com/api/nightbot/rank?profile_id=${profileId}&leaderboard_id=${leaderboardId}`;
     try {
-        console.log(`Fetching Nightbot stats for ${profileId}`);
+        console.log(`Fetching Nightbot stats for ${profileId} (LB: ${leaderboardId})`);
         const res = await fetch(url, {
             headers: { "User-Agent": PROJECT_URL }
         });
 
         if (!res.ok) {
-            console.error(`Nightbot API error: ${res.status}`);
+            // Not necessarily an error, just player not in this leaderboard or API issue
             return null;
         }
 
         let text = await res.text();
-        // Clean text: strip(), replace non-breaking space, strip quotes
         text = text.trim().replace(/\u00A0/g, " ").replace(/^"|"$/g, "");
+
+        if (text.includes("Player not found") || text.includes("Unranked")) return null;
 
         // Pattern: "Name (ELO) Rank #Ranking ... Winrate% winrate"
         // Python: r"(.+?)\s\((\d+)\)\sRank\s#(\d+).*?(\d+)%\swinrate"
@@ -38,10 +40,9 @@ const fetchNightbotStats = async (profileId: string) => {
                 winrate: parseInt(match[4])
             };
         }
-        console.log(`Nightbot response did not match pattern: ${text}`);
-        return null;
+        return null; // Pattern didn't match
     } catch (e: any) {
-        console.error("Nightbot fetch error", e);
+        console.error(`Nightbot fetch error (LB ${leaderboardId})`, e);
         return null;
     }
 };
@@ -156,14 +157,31 @@ serve(async (req) => {
 
         // 3. ENHANCEMENT: Fetch from AoE2Companion Nightbot API (Overrides logic using Python script logic)
         if (profileId) {
-            const nightbotStats = await fetchNightbotStats(profileId);
-            if (nightbotStats) {
-                console.log("Used Nightbot stats:", nightbotStats);
-                stats.elo1v1 = nightbotStats.elo; // Overwrite 1v1 ELO
-                stats.rank = nightbotStats.rank; // Set global rank
-                stats.winRate = nightbotStats.winrate; // Overwrite winrate
-                // Optional: Update name if available and better
-                if (nightbotStats.name) stats.name = nightbotStats.name;
+            // Attempt 1v1 RM (Leaderboard 3)
+            const nightbot1v1 = await fetchNightbotStats(profileId, 3);
+
+            // Attempt Team RM (Leaderboard 4)
+            const nightbotTG = await fetchNightbotStats(profileId, 4);
+
+            if (nightbot1v1) {
+                console.log("Used Nightbot 1v1 stats:", nightbot1v1);
+                stats.elo1v1 = nightbot1v1.elo; // Overwrite 1v1 ELO
+                stats.rank = nightbot1v1.rank; // Set global rank (1v1)
+                stats.winRate = nightbot1v1.winrate; // Prefer 1v1 winrate
+                if (nightbot1v1.name) stats.name = nightbot1v1.name;
+            }
+
+            if (nightbotTG) {
+                console.log("Used Nightbot TG stats:", nightbotTG);
+                stats.eloTG = nightbotTG.elo; // Set TG ELO from Nightbot (fresher than AoE2Insights sometimes)
+
+                // If 1v1 stats are missing, fallback to TG stats for generic info
+                if (!nightbot1v1) {
+                    stats.winRate = nightbotTG.winrate;
+                    if (nightbotTG.name) stats.name = nightbotTG.name;
+                    // Note: We don't set stats.rank here because that field implies 1v1 Global Rank 
+                    // and mixing ranks from different leaderboards could be confusing.
+                }
             }
         }
 
