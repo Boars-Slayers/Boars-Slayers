@@ -6,6 +6,7 @@ export interface PlayerStats {
     winRate1v1: number | null; // Percentage
     gamesPlayed: number;
     streak: number; // positive for win, negative for loss
+    rank: number | null; // Global Rank from AoE2Companion
 }
 
 import { supabase } from './supabase';
@@ -42,10 +43,11 @@ export const fetchPlayerStats = async (steamId: string): Promise<PlayerStats | n
             steamId: cleanId,
             name: stats.name,
             elo1v1: stats.elo1v1,
-            eloTG: stats.eloTG,
+            eloTG: stats.eloTG, // This will be null if only nightbot is used, but we combined it
             winRate1v1: stats.winRate,
             gamesPlayed: stats.gamesPlayed,
-            streak: 0 // No clear way to scrape streak easily from main profile page without more parsing
+            streak: 0,
+            rank: stats.rank || null
         };
 
     } catch (error) {
@@ -68,11 +70,12 @@ export const syncPlayerStats = async (profileId: string, steamId: string) => {
             elo_tg: stats.eloTG,
             win_rate_1v1: stats.winRate1v1,
             games_played: stats.gamesPlayed,
+            rank_1v1: stats.rank, // Saving global rank
             last_stats_update: new Date().toISOString()
         })
         .eq('id', profileId);
 
-    if (error) console.error('Error saving stats to Supabase:', error);
+    if (error) console.error('Error saving stats to Supabase (rank_1v1 might be missing in schema?):', error);
     return stats;
 };
 
@@ -113,4 +116,3 @@ export const getClanMatches = async (members: { steamId?: string }[]): Promise<i
         return 0;
     });
 };
-

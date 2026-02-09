@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { ProfileEditor } from './ProfileEditor';
 import { useAuth } from '../AuthContext';
 
+import { Notifications } from './Notifications';
+
 export const AuthStatus: React.FC = () => {
     const { user, profile, loading, login, logout, refreshProfile } = useAuth();
     const navigate = useNavigate();
@@ -26,6 +28,7 @@ export const AuthStatus: React.FC = () => {
     return (
         <>
             <div className="flex items-center gap-4">
+                <Notifications />
                 <div className="text-right hidden sm:block">
                     <p className="text-gray-200 font-bold text-sm tracking-wide">{profile?.username || user.email}</p>
                     <p className="text-xs uppercase tracking-widest text-gold-500 font-bold">

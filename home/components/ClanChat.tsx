@@ -68,7 +68,7 @@ export const ClanChat: React.FC = () => {
             .neq('role', 'candidate');
 
         if (data) {
-            setMembers(data.map(m => ({
+            setMembers(data.map((m: { id: string; username: string }) => ({
                 id: m.id,
                 label: m.username,
                 type: 'member',
@@ -130,8 +130,8 @@ export const ClanChat: React.FC = () => {
                     .single();
 
                 const fullMessage = { ...payload.new, user: userData } as ChatMessage;
-                setMessages(prev => {
-                    if (prev.some(m => m.id === fullMessage.id)) return prev;
+                setMessages((prev: ChatMessage[]) => {
+                    if (prev.some((m: ChatMessage) => m.id === fullMessage.id)) return prev;
                     return [...prev, fullMessage];
                 });
             })
@@ -286,6 +286,37 @@ export const ClanChat: React.FC = () => {
                 if (prev.some(m => m.id === data.id)) return prev;
                 return [...prev, data];
             });
+
+            // Handle mentions & notifications
+            const mentions = content.match(/@(\w+)/g);
+            if (mentions) {
+                const uniqueMentions: string[] = [...new Set(mentions as unknown as string[])];
+                const notificationList = uniqueMentions
+                    .map(mention => {
+                        const username = mention.slice(1).toLowerCase();
+                        const mentionedUser = members.find((m: Suggestion) => m.label.toLowerCase() === username);
+
+                        if (mentionedUser && mentionedUser.id !== user.id) {
+                            return {
+                                user_id: mentionedUser.id,
+                                sender_id: user.id,
+                                message_id: data.id,
+                                type: 'mention',
+                                is_read: false
+                            };
+                        }
+                        return null;
+                    })
+                    .filter((n): n is NonNullable<typeof n> => n !== null);
+
+                if (notificationList.length > 0) {
+                    const { error: notifError } = await supabase
+                        .from('notifications')
+                        .insert(notificationList);
+
+                    if (notifError) console.error('Error creating notifications:', notifError);
+                }
+            }
         }
         setSending(false);
     };

@@ -11,6 +11,7 @@ interface RankedMember {
     avatar_url: string;
     steam_id: string;
     stats?: PlayerStats;
+    rank?: number; // Global Rank
 }
 
 export function RankingPage() {
@@ -47,6 +48,7 @@ export function RankingPage() {
                 username: p.username,
                 avatar_url: p.avatar_url,
                 steam_id: p.steam_id,
+                rank: p.rank_1v1,
                 stats: p.elo_1v1 ? {
                     steamId: p.steam_id || '',
                     name: p.username,
@@ -54,7 +56,8 @@ export function RankingPage() {
                     eloTG: p.elo_tg,
                     winRate1v1: p.win_rate_1v1,
                     gamesPlayed: p.games_played,
-                    streak: p.streak
+                    streak: p.streak,
+                    rank: p.rank_1v1
                 } : undefined
             }));
 
@@ -163,7 +166,10 @@ export function RankingPage() {
                                         <thead className="bg-gray-800/50">
                                             <tr>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                                    Rango
+                                                    Posición
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                    Global #
                                                 </th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                                                     Jugador
@@ -193,6 +199,11 @@ export function RankingPage() {
                                                             }`}>
                                                             {idx + 1}
                                                         </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className="text-sm font-mono text-gray-300">
+                                                            {member.rank ? `#${member.rank}` : '-'}
+                                                        </span>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex flex-col space-y-2">

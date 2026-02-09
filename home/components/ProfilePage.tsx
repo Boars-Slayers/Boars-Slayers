@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, UserProfile } from '../lib/supabase';
-import { ExternalLink, MessageSquare, ArrowLeft, Loader2, Award, Swords, TrendingUp } from 'lucide-react';
+import { ExternalLink, MessageSquare, ArrowLeft, Loader2, Award, Swords, TrendingUp, Trophy } from 'lucide-react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { fetchPlayerStats, PlayerStats } from '../lib/aoe';
@@ -57,7 +57,8 @@ export const ProfilePage: React.FC = () => {
                         eloTG: data.elo_tg,
                         winRate1v1: data.win_rate_1v1,
                         gamesPlayed: data.games_played,
-                        streak: data.streak
+                        streak: data.streak,
+                        rank: data.rank_1v1
                     });
                 } else if (data.steam_id) {
                     // Fetch only if not cached
@@ -231,7 +232,8 @@ export const ProfilePage: React.FC = () => {
             <main className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Stats Section */}
                 <div className="lg:col-span-2 space-y-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                        <StatCard icon={<Trophy className="text-yellow-500" />} label="Rank # (Global)" value={stats?.rank ? `#${stats.rank}` : '--'} />
                         <StatCard icon={<Swords className="text-emerald-500" />} label="Win Rate" value={stats ? `${stats.winRate1v1}%` : '--'} />
                         <StatCard icon={<TrendingUp className="text-gold-500" />} label="ELO (1v1)" value={stats?.elo1v1 ? stats.elo1v1.toString() : '--'} />
                         <StatCard icon={<Award className="text-purple-500" />} label="ELO (TG)" value={stats?.eloTG ? stats.eloTG.toString() : '--'} />
@@ -317,7 +319,7 @@ export const ProfilePage: React.FC = () => {
                             <div className="grid grid-cols-3 gap-4">
                                 {userBadges.map(badge => (
                                     <div key={badge.id} className="group/badge relative flex flex-col items-center" title={badge.description}>
-                                        <div className="w-16 h-16 rounded-xl bg-stone-950 border border-gold-600/30 p-1 group-hover/badge:border-gold-500 transition-all transform group-hover/badge:scale-105 shadow-lg">
+                                        <div className="w-16 h-16 rounded-xl bg-stone-900 border border-gold-600/30 p-1 group-hover/badge:border-gold-500 transition-all transform group-hover/badge:scale-105 shadow-lg">
                                             <img src={badge.image_url} alt="Badge" className="w-full h-full object-cover rounded-lg" />
                                         </div>
                                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-stone-900 text-white text-xs rounded-lg opacity-0 group-hover/badge:opacity-100 transition-all whitespace-nowrap pointer-events-none z-20 border border-gold-600/50 shadow-2xl backdrop-blur-md">
