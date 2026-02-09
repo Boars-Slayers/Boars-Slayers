@@ -39,30 +39,41 @@ USING (
 
 -- 5. REPLAYS (Storage)
 -- Asumiendo que usamos bucket 'replays'
-BEGIN;
+DO $$
+BEGIN
   -- Política de inserción para Storage
-  CREATE POLICY "Web Master Upload Replays"
-  ON storage.objects FOR INSERT
-  WITH CHECK (
-    bucket_id = 'replays' AND
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'web_master')
-  );
+  BEGIN
+      DROP POLICY IF EXISTS "Web Master Upload Replays" ON storage.objects;
+      CREATE POLICY "Web Master Upload Replays"
+      ON storage.objects FOR INSERT
+      WITH CHECK (
+        bucket_id = 'replays' AND
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'web_master')
+      );
+  EXCEPTION WHEN OTHERS THEN NULL; END;
 
   -- Política de update/delete para Storage
-  CREATE POLICY "Web Master Manage Replays"
-  ON storage.objects FOR UPDATE
-  USING (
-    bucket_id = 'replays' AND
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'web_master')
-  );
+  BEGIN
+      DROP POLICY IF EXISTS "Web Master Manage Replays" ON storage.objects;
+      CREATE POLICY "Web Master Manage Replays"
+      ON storage.objects FOR UPDATE
+      USING (
+        bucket_id = 'replays' AND
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'web_master')
+      );
+  EXCEPTION WHEN OTHERS THEN NULL; END;
   
-  CREATE POLICY "Web Master Delete Replays"
-  ON storage.objects FOR DELETE
-  USING (
-    bucket_id = 'replays' AND
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'web_master')
-  );
+  BEGIN
+      DROP POLICY IF EXISTS "Web Master Delete Replays" ON storage.objects;
+      CREATE POLICY "Web Master Delete Replays"
+      ON storage.objects FOR DELETE
+      USING (
+        bucket_id = 'replays' AND
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'web_master')
+      );
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+
 EXCEPTION WHEN OTHERS THEN
   -- Ignorar error si la política ya existe o si storage no está activo igual
   NULL;
-END;
+END $$;
