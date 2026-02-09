@@ -42,4 +42,6 @@ export interface UserProfile {
     created_at: string;
     roles?: ClanRole[];
     badges?: { id: string, image_url: string, description: string }[];
+    aoe_profile_id?: string;
+    rank_1v1?: number;
 }
