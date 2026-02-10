@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, UserProfile } from '../lib/supabase';
-import { ExternalLink, MessageSquare, ArrowLeft, Loader2, Award, Swords, TrendingUp, Trophy } from 'lucide-react';
+import { ExternalLink, MessageSquare, ArrowLeft, Loader2, Award, Swords, TrendingUp, Trophy, RefreshCw } from 'lucide-react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
-import { fetchPlayerStats, PlayerStats } from '../lib/aoe';
+import { fetchPlayerStats, PlayerStats, syncPlayerStats } from '../lib/aoe';
 import { useAuth } from '../AuthContext';
 import { Moment } from '../types';
 import { MomentCard } from './Moments/MomentCard';
@@ -17,7 +17,8 @@ export const ProfilePage: React.FC = () => {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [stats, setStats] = useState<PlayerStats | null>(null);
     const [loading, setLoading] = useState(true);
-    const { user: currentUser } = useAuth();
+    const [syncing, setSyncing] = useState(false);
+    const { user: currentUser, profile: currentUserProfile } = useAuth();
     const [moments, setMoments] = useState<Moment[]>([]);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [userBadges, setUserBadges] = useState<{ id: string, image_url: string, description: string }[]>([]);
@@ -82,6 +83,24 @@ export const ProfilePage: React.FC = () => {
         };
         if (username) fetchProfile();
     }, [username]);
+
+    const handleRefreshStats = async () => {
+        if (!profile) return;
+        setSyncing(true);
+        try {
+            let aoeId = profile.aoe_profile_id;
+            if (!aoeId && profile.aoe_insights_url) {
+                const match = profile.aoe_insights_url.match(/\/user\/(\d+)/);
+                if (match && match[1]) aoeId = match[1];
+            }
+            const newStats = await syncPlayerStats(profile.id, profile.steam_id, aoeId);
+            if (newStats) setStats(newStats);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSyncing(false);
+        }
+    };
 
     const fetchMoments = async (userId: string) => {
         try {
@@ -240,11 +259,26 @@ export const ProfilePage: React.FC = () => {
             <main className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Stats Section */}
                 <div className="lg:col-span-2 space-y-8">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                        <StatCard icon={<Trophy className="text-yellow-500" />} label="Rank # (Global)" value={stats?.rank ? `#${stats.rank}` : '--'} />
-                        <StatCard icon={<Swords className="text-emerald-500" />} label="Win Rate" value={stats ? `${stats.winRate1v1}%` : '--'} />
-                        <StatCard icon={<TrendingUp className="text-gold-500" />} label="ELO (1v1)" value={stats?.elo1v1 ? stats.elo1v1.toString() : '--'} />
-                        <StatCard icon={<Award className="text-purple-500" />} label="ELO (TG)" value={stats?.eloTG ? stats.eloTG.toString() : '--'} />
+                    <div className="flex flex-col gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                            <StatCard icon={<Trophy className="text-yellow-500" />} label="Rank # (Global)" value={stats?.rank ? `#${stats.rank}` : '--'} />
+                            <StatCard icon={<Swords className="text-emerald-500" />} label="Win Rate" value={stats ? `${stats.winRate1v1}%` : '--'} />
+                            <StatCard icon={<TrendingUp className="text-gold-500" />} label="ELO (1v1)" value={stats?.elo1v1 ? stats.elo1v1.toString() : '--'} />
+                            <StatCard icon={<Award className="text-purple-500" />} label="ELO (TG)" value={stats?.eloTG ? stats.eloTG.toString() : '--'} />
+                        </div>
+
+                        {(currentUser?.id === profile.id || (currentUserProfile?.role === 'admin' || currentUserProfile?.role === 'web_master')) && (
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={handleRefreshStats}
+                                    disabled={syncing}
+                                    className="flex items-center gap-2 px-4 py-2 bg-stone-900 border border-gold-600/30 text-gold-500 rounded-lg hover:bg-gold-600/10 transition-all text-[10px] font-black uppercase tracking-widest disabled:opacity-50 group"
+                                >
+                                    <RefreshCw size={14} className={`${syncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+                                    {syncing ? 'Actualizando...' : 'Actualizar Estadísticas'}
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="bg-stone-900/50 border border-white/5 rounded-2xl p-8 backdrop-blur-sm">
@@ -284,16 +318,18 @@ export const ProfilePage: React.FC = () => {
                     </div>
 
 
-                    {/* Placeholder for future API integration */}
-                    <div className="bg-stone-900/50 border border-white/5 rounded-2xl p-8 backdrop-blur-sm opacity-50 cursor-not-allowed">
+                    {/* Match History (Static notice as scraping is disabled) */}
+                    <div className="bg-stone-900/50 border border-white/5 rounded-2xl p-8 backdrop-blur-sm opacity-50">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-xl font-serif font-bold text-white flex items-center gap-2">
                                 <Swords className="text-gold-500" size={20} /> Historial de Batallas
                             </h3>
-                            <span className="text-[10px] bg-gold-900/20 text-gold-500 px-2 py-1 rounded border border-gold-600/30">Próximamente</span>
+                            <span className="text-[10px] bg-gold-900/20 text-gold-500 px-2 py-1 rounded border border-gold-600/30">Solo Estadísticas</span>
                         </div>
-                        <div className="flex flex-col items-center py-10">
-                            <p className="text-stone-500 italic">Conectando con las APIs de AOE... Esperando suministros.</p>
+                        <div className="flex flex-col items-center py-10 text-center">
+                            <p className="text-stone-500 italic max-w-sm">
+                                El historial detallado de partidas se encuentra desactivado para optimizar el campamento. Consulta tus estadísticas en la parte superior.
+                            </p>
                         </div>
                     </div>
                 </div>
