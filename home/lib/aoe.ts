@@ -122,9 +122,35 @@ export const syncPlayerStats = async (profileId: string, steamId: string, aoeCom
 export const fetchMatchHistory = async (_steamId: string, _c: number, aoeCompanionId: string) => {
     if (!aoeCompanionId) return [];
 
+    // --- PRIORIDAD 1: Tu propia Edge Function (Sin problemas de CORS) ---
+    try {
+        const supabaseUrl = (supabase as any).supabaseUrl;
+        const supabaseKey = (supabase as any).supabaseKey;
+
+        const response = await fetch(`${supabaseUrl}/functions/v1/proxy-match-history`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`
+            },
+            body: JSON.stringify({ profileId: aoeCompanionId, action: 'matches' })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.matches && data.matches.length > 0) {
+                console.log(`✅ Batallas (ID: ${aoeCompanionId}) obtenidas vía Supabase Edge Function.`);
+                return data.matches;
+            }
+        }
+    } catch (e) {
+        console.warn("⚠️ Edge Function no disponible o falló, intentando proxies externos...");
+    }
+
     const officialUrl = `https://aoe-api.worldsedgelink.com/community/leaderboard/getActualMatchHistory?title=age2&profile_ids=%5B${aoeCompanionId}%5D`;
 
-    // Configuración de proxies más robustos
+    // Configuración de proxies más robustos como respaldo
     const proxyConfigs = [
         {
             name: 'AllOrigins',
@@ -133,7 +159,7 @@ export const fetchMatchHistory = async (_steamId: string, _c: number, aoeCompani
         },
         {
             name: 'CodeTabs',
-            url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(officialUrl)}`,
+            url: `https://api.codetabs.com/v1/proxy?quest=${officialUrl}`,
             isJsonWrapper: false
         }
     ];
