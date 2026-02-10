@@ -236,7 +236,11 @@ export const ProfilePage: FC = () => {
                         {moments.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {moments.map((moment: Moment) => (
-                                    <MomentCard key={moment.id} moment={moment} />
+                                    <MomentCard
+                                        key={moment.id}
+                                        moment={moment}
+                                        currentUser={currentUser}
+                                    />
                                 ))}
                             </div>
                         ) : (
@@ -313,10 +317,11 @@ export const ProfilePage: FC = () => {
                 <UploadMomentModal
                     isOpen={isUploadModalOpen}
                     onClose={() => setIsUploadModalOpen(false)}
-                    onSuccess={() => {
+                    onUploadComplete={() => {
                         setIsUploadModalOpen(false);
                         fetchMoments(profile.id);
                     }}
+                    currentUserId={currentUser?.id || ''}
                 />
             )}
             <Footer />
