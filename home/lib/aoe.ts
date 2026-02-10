@@ -111,22 +111,18 @@ export const syncPlayerStats = async (profileId: string, steamId: string, aoeCom
 export const fetchMatchHistory = async (_steamId: string, _c: number, aoeCompanionId: string) => {
     if (!aoeCompanionId) return [];
 
-    // --- PRIORIDAD 1: Tu propia Edge Function (RECOMENDADO) ---
+    // --- PRIORIDAD 1: Tu infraestructura (Supabase) ---
     try {
-        console.log(`⚔️ Consultando batallas de ${aoeCompanionId} vía Supabase...`);
         const { data, error } = await supabase.functions.invoke('proxy-match-history', {
             body: { profileId: aoeCompanionId, action: 'matches' }
         });
 
         if (!error && data?.matches && data.matches.length > 0) {
-            console.log(`✅ Batallas obtenidas con éxito vía Supabase.`);
+            console.log(`✅ Batallas [ID: ${aoeCompanionId}] OK (Supabase)`);
             return data.matches;
         }
-
-        if (error) console.warn("⚠️ Error en Edge Function:", error);
-    } catch (e) {
-        console.warn("⚠️ Fallo crítico en llamada a Supabase, intentando proxies...");
-    }
+        if (error) console.error(`❌ Fallo en Supabase (ID: ${aoeCompanionId}):`, error);
+    } catch (e) { /* Fallback automático */ }
 
     const officialUrl = `https://aoe-api.worldsedgelink.com/community/leaderboard/getActualMatchHistory?title=age2&profile_ids=%5B${aoeCompanionId}%5D`;
 
