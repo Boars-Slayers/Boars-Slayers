@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { syncPlayerStats, PlayerStats } from '../lib/aoe';
-import { Match } from '../types';
 import { useAuth } from '../AuthContext';
-import { RefreshCw, Swords, Trophy, TrendingUp, Users } from 'lucide-react';
+import { RefreshCw, Swords, Trophy } from 'lucide-react';
 
 interface RankedMember {
     id: string;
