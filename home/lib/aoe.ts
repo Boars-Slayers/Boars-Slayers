@@ -122,28 +122,36 @@ export const syncPlayerStats = async (profileId: string, steamId: string, aoeCom
 export const fetchMatchHistory = async (_steamId: string, _c: number, aoeCompanionId: string) => {
     if (!aoeCompanionId) return [];
 
-    // Oficial World's Edge link API
     const officialUrl = `https://aoe-api.worldsedgelink.com/community/leaderboard/getActualMatchHistory?title=age2&profile_ids=%5B${aoeCompanionId}%5D`;
 
-    // Lista de proxies a intentar
-    const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(officialUrl)}`,
-        `https://cors-anywhere.herokuapp.com/${officialUrl}`
+    // Configuración de proxies más robustos
+    const proxyConfigs = [
+        {
+            name: 'AllOrigins',
+            url: `https://api.allorigins.win/get?url=${encodeURIComponent(officialUrl)}`,
+            isJsonWrapper: true
+        },
+        {
+            name: 'CodeTabs',
+            url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(officialUrl)}`,
+            isJsonWrapper: false
+        }
     ];
 
-    for (const proxyUrl of proxies) {
+    for (const config of proxyConfigs) {
         try {
-            console.log(`⚔️ Intentando obtener batallas (ID: ${aoeCompanionId}) via: ${proxyUrl.includes('allorigins') ? 'AllOrigins' : 'CORSProxy'}`);
-            const response = await fetch(proxyUrl);
+            console.log(`⚔️ Batallas: Intentando vía ${config.name}...`);
+            const response = await fetch(config.url);
 
             if (response.ok) {
-                const data = await response.json();
+                const rawData = await response.json();
+                const data = config.isJsonWrapper ? JSON.parse(rawData.contents) : rawData;
 
-                // Formato oficial: { result: { matchHistoryStats: [...] } }
                 if (data.result && data.result.matchHistoryStats) {
+                    console.log(`✅ ${config.name} respondió con éxito.`);
                     return data.result.matchHistoryStats.map((m: any) => ({
                         match_id: m.id,
-                        name: m.description || "Batalla Sangrienta",
+                        name: m.description || "Invasión Bárbara",
                         started: m.completiontime,
                         ranked: m.matchtype_id === 1,
                         players: (m.matchhistoryreportresults || []).map((r: any) => ({
@@ -154,7 +162,7 @@ export const fetchMatchHistory = async (_steamId: string, _c: number, aoeCompani
                 }
             }
         } catch (error) {
-            console.warn(`⚠️ Intento fallido para proxy: ${proxyUrl}`);
+            console.warn(`⚠️ ${config.name} no pudo obtener los datos.`);
         }
     }
 
