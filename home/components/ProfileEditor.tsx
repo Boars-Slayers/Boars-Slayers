@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
-import { X, Camera, Save, Loader2, User, FileText, Link as LinkIcon, Hash } from 'lucide-react';
+import { X, Camera, Save, Loader2, User, FileText, Link as LinkIcon, Hash, ShieldCheck } from 'lucide-react';
 import { ImageCropper } from './ImageCropper';
 
 interface ProfileEditorProps {
@@ -16,6 +16,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
     const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || '');
     const [steamId, setSteamId] = useState(profile.steam_id || '');
     const [aoeUrl, setAoeUrl] = useState(profile.aoe_insights_url || '');
+    const [aoeCompanionId, setAoeCompanionId] = useState(profile.aoe_companion_id || '');
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
@@ -32,7 +33,6 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
             const reader = new FileReader();
             reader.addEventListener('load', () => setTempImageSrc(reader.result?.toString() || null));
             reader.readAsDataURL(file);
-            // Reset value so same file can be selected again
             event.target.value = '';
         }
     };
@@ -41,15 +41,12 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
         try {
             setUploading(true);
             setTempImageSrc(null);
-
             const fileName = `${profile.id}-${Math.random()}.jpg`;
             const filePath = `${fileName}`;
 
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
-                .upload(filePath, blob, {
-                    contentType: 'image/jpeg'
-                });
+                .upload(filePath, blob, { contentType: 'image/jpeg' });
 
             if (uploadError) throw uploadError;
 
@@ -83,7 +80,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
                     avatar_url: avatarUrl,
                     steam_id: steamId,
                     aoe_insights_url: aoeUrl,
-                    aoe_profile_id: extractedProfileId
+                    aoe_profile_id: extractedProfileId,
+                    aoe_companion_id: aoeCompanionId
                 })
                 .eq('id', profile.id);
 
@@ -108,7 +106,6 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
         <div className={`fixed inset-0 z-[70] flex items-center justify-center p-4 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={closeWithAnimation} />
 
-            {/* Image Cropper Overlay */}
             {tempImageSrc && (
                 <ImageCropper
                     imageSrc={tempImageSrc}
@@ -126,26 +123,18 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
                 </div>
 
                 <div className="p-8 space-y-6">
-                    {/* Avatar Section */}
                     <div className="flex flex-col items-center gap-4">
                         <div className="relative group">
                             <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gold-600/50 shadow-lg">
                                 <img src={avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
-                                {uploading && (
-                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                        <Loader2 size={24} className="text-gold-500 animate-spin" />
-                                    </div>
-                                )}
                             </div>
-                            <label className="absolute bottom-0 right-0 p-2 bg-gold-600 hover:bg-gold-500 text-stone-900 rounded-full cursor-pointer transition-all shadow-md group-hover:scale-110">
+                            <label className="absolute bottom-0 right-0 p-2 bg-gold-600 hover:bg-gold-500 text-stone-900 rounded-full cursor-pointer shadow-md group-hover:scale-110">
                                 <Camera size={16} />
                                 <input type="file" className="hidden" accept="image/*" onChange={handleFileSelect} disabled={uploading} />
                             </label>
                         </div>
-                        <p className="text-[10px] uppercase tracking-widest text-stone-500 font-bold">Cambiar Estandarte</p>
                     </div>
 
-                    {/* Form Fields */}
                     <div className="space-y-4">
                         <div className="space-y-1">
                             <label className="flex items-center gap-2 text-[10px] font-black text-gold-500 uppercase tracking-widest px-1">
@@ -155,8 +144,21 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all font-medium"
-                                placeholder="Tu nombre..."
+                                className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none text-sm"
+                            />
+                        </div>
+
+                        {/* AoE Companion ID - NUEVO */}
+                        <div className="space-y-1">
+                            <label className="flex items-center gap-2 text-[10px] font-black text-gold-500 uppercase tracking-widest px-1">
+                                <ShieldCheck size={12} /> AoE Companion ID
+                            </label>
+                            <input
+                                type="text"
+                                value={aoeCompanionId}
+                                onChange={(e) => setAoeCompanionId(e.target.value)}
+                                className="w-full bg-stone-900 border border-gold-600/30 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all font-mono text-xs"
+                                placeholder="ID numérico (ej: 10383990)"
                             />
                         </div>
 
@@ -169,8 +171,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
                                     type="text"
                                     value={steamId}
                                     onChange={(e) => setSteamId(e.target.value)}
-                                    className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all font-mono text-sm"
-                                    placeholder="7656..."
+                                    className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none text-xs font-mono"
                                 />
                             </div>
                             <div className="space-y-1">
@@ -181,8 +182,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
                                     type="text"
                                     value={favoriteCiv}
                                     onChange={(e) => setFavoriteCiv(e.target.value)}
-                                    className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all font-medium text-sm"
-                                    placeholder="Ej: Mongoles"
+                                    className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none text-xs"
                                 />
                             </div>
                         </div>
@@ -195,36 +195,30 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
                                 type="text"
                                 value={aoeUrl}
                                 onChange={(e) => setAoeUrl(e.target.value)}
-                                className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all text-xs"
-                                placeholder="https://www.aoe2insights.com/user/..."
+                                className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none text-xs"
                             />
-                            <p className="text-[10px] text-stone-500 px-1 mt-1 italic">
-                                Necesaria para vincular tus estadísticas de combate.
-                            </p>
                         </div>
 
                         <div className="space-y-1">
                             <label className="flex items-center gap-2 text-[10px] font-black text-gold-500 uppercase tracking-widest px-1">
-                                <FileText size={12} /> Crónica (Descripción)
+                                <FileText size={12} /> Crónica
                             </label>
                             <textarea
                                 value={bio}
                                 onChange={(e) => setBio(e.target.value)}
-                                rows={3}
-                                className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all font-medium resize-none text-sm"
-                                placeholder="Cuéntanos tu historia..."
+                                rows={2}
+                                className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none resize-none text-xs"
                             />
                         </div>
                     </div>
 
-                    {/* Save Button */}
                     <button
                         onClick={handleSave}
                         disabled={saving || uploading}
-                        className="w-full py-4 mt-2 bg-gradient-to-r from-gold-600 to-gold-700 hover:from-gold-500 hover:to-gold-600 text-stone-900 font-black uppercase tracking-widest rounded-xl shadow-lg shadow-gold-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 group"
+                        className="w-full py-4 mt-2 bg-gradient-to-r from-gold-600 to-gold-700 hover:from-gold-500 hover:to-gold-600 text-stone-900 font-black uppercase tracking-widest rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 group"
                     >
                         {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} className="group-hover:scale-110 transition-transform" />}
-                        Guardar Crónicas
+                        Guardar Perfil
                     </button>
                 </div>
             </div>

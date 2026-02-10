@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
-import { X, ExternalLink, Shield, Send, CheckCircle2 } from 'lucide-react';
+import { X, ExternalLink, Shield, Send, CheckCircle2, User } from 'lucide-react';
 import { syncPlayerStats } from '../lib/aoe';
 
 interface JoinModalProps {
@@ -14,6 +14,7 @@ interface JoinModalProps {
 export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, onSuccess, onLogin }) => {
     const [steamId, setSteamId] = useState(profile?.steam_id || '');
     const [aoeUrl, setAoeUrl] = useState(profile?.aoe_insights_url || '');
+    const [aoeCompanionId, setAoeCompanionId] = useState(profile?.aoe_companion_id || '');
     const [email, setEmail] = useState(profile?.contact_email || user?.email || '');
     const [phone, setPhone] = useState(profile?.phone_number || '');
     const [reason, setReason] = useState(profile?.reason || '');
@@ -34,7 +35,6 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
         setLoading(true);
         try {
             // Extract AoE Profile ID from URL
-            // URL format example: https://www.aoe2insights.com/user/10383990/
             const profileIdMatch = aoeUrl.match(/\/user\/(\d+)/);
             const extractedProfileId = profileIdMatch ? profileIdMatch[1] : null;
 
@@ -44,7 +44,8 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
                     steam_id: steamId,
                     aoe_insights_url: aoeUrl,
                     aoe_profile_id: extractedProfileId,
-                    contact_email: email, // Changed from email to contact_email
+                    aoe_companion_id: aoeCompanionId,
+                    contact_email: email,
                     phone_number: phone,
                     reason: reason,
                     accepted_rules: true,
@@ -54,10 +55,10 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
 
             if (error) throw error;
 
-            // Sync stats immediately if steamId is provided
-            if (steamId || extractedProfileId) {
+            // Sync stats immediately using Companion ID
+            if (aoeCompanionId) {
                 try {
-                    await syncPlayerStats(user.id, steamId, extractedProfileId);
+                    await syncPlayerStats(user.id, steamId, aoeCompanionId);
                 } catch (err) {
                     console.error('Failed to sync stats on registration:', err);
                 }
@@ -117,11 +118,11 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
             {/* Backdrop with blur */}
             <div className="fixed inset-0 bg-black/90 backdrop-blur-xl transition-opacity" onClick={onClose} />
 
-            {/* Modal Container - ensures centering but allows scroll when tall */}
+            {/* Modal Container */}
             <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
                 <div
                     className="relative transform overflow-hidden rounded-2xl bg-stone-900 border border-gold-600/30 text-left shadow-2xl transition-all sm:my-8 w-full max-w-2xl"
-                    onClick={e => e.stopPropagation()} // Prevent closing when clicking inside
+                    onClick={e => e.stopPropagation()}
                 >
                     {/* Header */}
                     <div className="p-6 border-b border-gold-600/20 flex justify-between items-center bg-black/20">
@@ -161,7 +162,6 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
                             </p>
                         </div>
                     ) : (
-                        /* Existing Form Content */
                         <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
@@ -174,22 +174,34 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
                                         placeholder="7656119XXXXXXXX"
                                         className="w-full bg-stone-800/50 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 focus:bg-stone-800 outline-none transition-all placeholder:text-stone-600"
                                     />
-                                    <p className="text-[10px] text-stone-500">Para conectar estadísticas de AOE2.net</p>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gold-500 uppercase tracking-widest px-1">AOE Insights URL (Requisito)</label>
+                                    <label className="text-xs font-bold text-gold-500 uppercase tracking-widest px-1 flex items-center gap-1">
+                                        AoE Companion ID <span className="text-red-500 font-bold">*</span>
+                                    </label>
                                     <input
                                         required
+                                        type="text"
+                                        value={aoeCompanionId}
+                                        onChange={(e) => setAoeCompanionId(e.target.value)}
+                                        placeholder="ID numérico (ej: 10383990)"
+                                        className="w-full bg-stone-800 border border-gold-600/20 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all placeholder:text-stone-600 text-sm font-mono"
+                                    />
+                                    <a href="https://aoe2companion.com/" target="_blank" rel="noreferrer" className="text-[10px] text-gold-600 flex items-center gap-1 hover:underline">
+                                        Buscar mi ID en Companion <ExternalLink size={10} />
+                                    </a>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gold-500 uppercase tracking-widest px-1">AoE Insights URL</label>
+                                    <input
                                         type="url"
                                         value={aoeUrl}
                                         onChange={(e) => setAoeUrl(e.target.value)}
                                         placeholder="https://aoeinsights.com/user/..."
-                                        className="w-full bg-stone-800/50 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 focus:bg-stone-800 outline-none transition-all placeholder:text-stone-600"
+                                        className="w-full bg-stone-800/50 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 focus:bg-stone-800 outline-none transition-all placeholder:text-stone-600 text-xs"
                                     />
-                                    <a href="https://www.aoeinsights.com/" target="_blank" rel="noreferrer" className="text-[10px] text-gold-600 flex items-center gap-1 hover:underline">
-                                        Buscar mi perfil <ExternalLink size={10} />
-                                    </a>
                                 </div>
 
                                 <div className="space-y-2">
@@ -200,18 +212,6 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="tu@email.com"
-                                        className="w-full bg-stone-800/50 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 focus:bg-stone-800 outline-none transition-all placeholder:text-stone-600"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gold-500 uppercase tracking-widest px-1">WhatsApp (Con indicativo)</label>
-                                    <input
-                                        required
-                                        type="tel"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        placeholder="+57 300 123 4567"
                                         className="w-full bg-stone-800/50 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 focus:bg-stone-800 outline-none transition-all placeholder:text-stone-600"
                                     />
                                 </div>
@@ -233,41 +233,29 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
                                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                                     <Shield size={16} className="text-gold-600" /> Normas del Clan
                                 </h3>
-                                <div className="text-xs text-stone-400 space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="text-xs text-stone-400 space-y-2">
                                     <p>1. Respeto absoluto a todos los miembros.</p>
                                     <p>2. Participación activa en el Discord del clan.</p>
-                                    <p>3. Nada de toxicidad en partidas públicas o del clan.</p>
-                                    <p>4. No se permite el uso de trampas (hacks/cheats).</p>
-                                    <p>5. Ayudar a los miembros menos experimentados.</p>
+                                    <p>3. Nada de toxicidad.</p>
                                 </div>
                                 <label className="flex items-center gap-3 cursor-pointer group">
-                                    <div className="relative">
-                                        <input
-                                            type="checkbox"
-                                            checked={accepted}
-                                            onChange={(e) => setAccepted(e.target.checked)}
-                                            className="peer hidden"
-                                        />
-                                        <div className="w-5 h-5 border-2 border-stone-600 rounded peer-checked:bg-gold-600 peer-checked:border-gold-600 transition-all flex items-center justify-center text-stone-900">
-                                            {accepted && <Send size={12} />}
-                                        </div>
-                                    </div>
-                                    <span className="text-sm text-stone-300 group-hover:text-white transition-colors">He leído y acepto las normas del clan.</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={accepted}
+                                        onChange={(e) => setAccepted(e.target.checked)}
+                                        className="peer hidden"
+                                    />
+                                    <div className="w-5 h-5 border-2 border-stone-600 rounded peer-checked:bg-gold-600 peer-checked:border-gold-600 transition-all" />
+                                    <span className="text-sm text-stone-300 group-hover:text-white">Acepto las normas.</span>
                                 </label>
                             </div>
 
                             <button
                                 type="submit"
                                 disabled={loading || !accepted}
-                                className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-700 hover:from-gold-500 hover:to-gold-600 text-stone-900 font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-gold-900/20 disabled:opacity-50 flex items-center justify-center gap-2 group"
+                                className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-700 text-stone-900 font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-gold-900/20 disabled:opacity-50 flex items-center justify-center gap-2 group"
                             >
-                                {loading ? (
-                                    "Procesando Alistamiento..."
-                                ) : (
-                                    <>
-                                        Enviar Solicitud <Send size={18} className="group-hover:translate-x-1 transition-transform" />
-                                    </>
-                                )}
+                                {loading ? "Procesando Alistamiento..." : "Enviar Solicitud"}
                             </button>
                         </form>
                     )}

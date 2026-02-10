@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, UserProfile } from '../lib/supabase';
-import { ExternalLink, MessageSquare, ArrowLeft, Loader2, Award, Swords, TrendingUp, Trophy, RefreshCw, AlertCircle, Terminal } from 'lucide-react';
+import { ExternalLink, MessageSquare, ArrowLeft, Loader2, Award, Swords, TrendingUp, Trophy, RefreshCw, AlertCircle, Terminal, ShieldCheck } from 'lucide-react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { fetchPlayerStats, PlayerStats, syncPlayerStats } from '../lib/aoe';
@@ -40,7 +40,7 @@ export const ProfilePage: React.FC = () => {
                 };
                 setProfile(formattedProfile);
 
-                // 1. CARGA DESDE CACHE (INSTANTÁNEO)
+                // 1. CARGA DESDE CACHE
                 if (data.elo_1v1 || data.rank_1v1 || data.win_rate_1v1) {
                     setStats({
                         steamId: data.steam_id,
@@ -54,9 +54,9 @@ export const ProfilePage: React.FC = () => {
                     });
                 }
 
-                // 2. AUTO-SYNC SI NO HAY DATOS Y TENEMOS ID
-                if (!data.elo_1v1 && data.aoe_profile_id) {
-                    handleRefreshStats(data.id, data.steam_id, data.aoe_profile_id);
+                // 2. AUTO-SYNC SI TIENE COMPANION ID Y NO TIENE STATS
+                if (!data.elo_1v1 && data.aoe_companion_id) {
+                    handleRefreshStats(data.id, data.steam_id, data.aoe_companion_id);
                 }
 
                 fetchMoments(data.id);
@@ -67,13 +67,16 @@ export const ProfilePage: React.FC = () => {
         if (username) fetchProfile();
     }, [username]);
 
-    const handleRefreshStats = async (pId?: string, sId?: string, aId?: string) => {
-        const profileToUse = profile || { id: pId, steam_id: sId, aoe_profile_id: aId };
-        if (!profileToUse.aoe_profile_id) return;
+    const handleRefreshStats = async (pId?: string, sId?: string, cId?: string) => {
+        const targetId = cId || profile?.aoe_companion_id;
+        const targetProfileId = pId || profile?.id;
+        const targetSteamId = sId || profile?.steam_id;
+
+        if (!targetId || !targetProfileId) return;
 
         setSyncing(true);
         try {
-            const newStats = await syncPlayerStats(profileToUse.id!, profileToUse.steam_id || '', profileToUse.aoe_profile_id);
+            const newStats = await syncPlayerStats(targetProfileId, targetSteamId || '', targetId);
             if (newStats) setStats(newStats);
         } catch (err) {
             console.error(err);
@@ -101,7 +104,10 @@ export const ProfilePage: React.FC = () => {
                     <div className="flex flex-col md:flex-row items-center md:items-end gap-6 w-full">
                         <img src={profile.avatar_url} className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-stone-950 shadow-2xl bg-stone-800 object-cover" />
                         <div className="flex-1 text-center md:text-left mb-2">
-                            <h1 className="text-3xl md:text-5xl font-serif font-black text-white mb-2">{profile.username}</h1>
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
+                                <h1 className="text-3xl md:text-5xl font-serif font-black text-white">{profile.username}</h1>
+                                {profile.aoe_companion_id && <div className="bg-gold-600/20 text-gold-500 border border-gold-600/30 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest flex items-center gap-1"><ShieldCheck size={10} /> Verificado</div>}
+                            </div>
                             <p className="text-stone-400 italic text-sm">{profile.bio || 'Sin historia...'}</p>
                         </div>
                     </div>
@@ -110,7 +116,6 @@ export const ProfilePage: React.FC = () => {
 
             <main className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    {/* CUADROS REVOLUCIONARIOS */}
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                             <StatCard
@@ -121,7 +126,7 @@ export const ProfilePage: React.FC = () => {
                             <StatCard
                                 icon={<Swords className={syncing ? "animate-pulse text-emerald-500" : "text-emerald-500"} />}
                                 label="Win Rate"
-                                value={stats?.winRate1v1 !== null ? `${stats?.winRate1v1}%` : (syncing ? '...' : '--')}
+                                value={stats?.winRate1v1 !== null && stats?.winRate1v1 !== undefined ? `${stats.winRate1v1}%` : (syncing ? '...' : '--')}
                             />
                             <StatCard
                                 icon={<TrendingUp className={syncing ? "animate-bounce text-gold-500" : "text-gold-500"} />}
@@ -136,34 +141,33 @@ export const ProfilePage: React.FC = () => {
                         </div>
 
                         <div className="flex justify-between items-center">
-                            {!profile.aoe_profile_id && (
+                            {!profile.aoe_companion_id && (
                                 <div className="flex items-center gap-2 text-amber-500 text-[10px] font-bold uppercase tracking-widest bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/20">
-                                    <AlertCircle size={14} /> Falta vincular ID de AoE2Insights
+                                    <AlertCircle size={14} /> Falta configurar AoE Companion ID para estadísticas
                                 </div>
                             )}
 
                             {(currentUser?.id === profile.id || currentUserProfile?.role === 'admin') && (
                                 <button
                                     onClick={() => handleRefreshStats()}
-                                    disabled={syncing || !profile.aoe_profile_id}
+                                    disabled={syncing || !profile.aoe_companion_id}
                                     className="ml-auto flex items-center gap-2 px-4 py-2 bg-stone-900 border border-gold-600/30 text-gold-500 rounded-lg hover:bg-gold-600/10 transition-all text-[10px] font-black uppercase tracking-widest disabled:opacity-30 group"
                                 >
                                     <RefreshCw size={14} className={syncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-700'} />
-                                    {syncing ? 'Llamando a las APIs...' : 'Actualizar Estadísticas'}
+                                    {syncing ? 'Sincronizando...' : 'Actualizar Estadísticas'}
                                 </button>
                             )}
                         </div>
 
-                        {/* DEBUG PANEL (SOLO ADMINS) */}
                         {currentUserProfile?.role === 'admin' && stats?.debug && (
                             <div className="mt-4">
                                 <button onClick={() => setShowDebug(!showDebug)} className="text-[9px] text-stone-600 hover:text-stone-400 flex items-center gap-1 uppercase tracking-tighter">
-                                    <Terminal size={10} /> {showDebug ? 'Ocultar' : 'Ver'} Respuesta Raw de API
+                                    <Terminal size={10} /> {showDebug ? 'Ocultar' : 'Ver'} Oráculo Debug
                                 </button>
                                 {showDebug && (
                                     <div className="mt-2 p-3 bg-black rounded border border-stone-800 font-mono text-[10px] text-stone-400 overflow-x-auto">
-                                        <p className="text-emerald-500 mb-1">// API Response Debug</p>
                                         <div className="space-y-1">
+                                            <p>AoE Companion ID Usado: {profile.aoe_companion_id}</p>
                                             <p>1v1_RAW: "{stats.debug.raw1v1}"</p>
                                             <p>TG_RAW: "{stats.debug.rawTG}"</p>
                                             {stats.debug.err1v1 && <p className="text-red-500">1v1_ERR: {stats.debug.err1v1}</p>}
@@ -179,7 +183,7 @@ export const ProfilePage: React.FC = () => {
                         <h3 className="text-xl font-serif font-bold text-white mb-6 flex items-center gap-2">
                             <MessageSquare className="text-gold-500" size={20} /> Crónica de Guerra
                         </h3>
-                        <p className="text-stone-300 leading-relaxed whitespace-pre-wrap">{profile.reason || 'SIn historia registrada todavía.'}</p>
+                        <p className="text-stone-300 leading-relaxed whitespace-pre-wrap">{profile.reason || 'Sin historia registrada todavía.'}</p>
                     </div>
                 </div>
 
@@ -188,8 +192,8 @@ export const ProfilePage: React.FC = () => {
                         <h4 className="text-xs font-black uppercase tracking-widest text-gold-500 mb-6">Información de Combate</h4>
                         <div className="space-y-4 text-sm">
                             <div className="flex justify-between py-2 border-b border-stone-800">
-                                <span className="text-stone-500">AoE Profile ID</span>
-                                <span className="text-white font-mono">{profile.aoe_profile_id || '---'}</span>
+                                <span className="text-stone-500">AoE Companion ID</span>
+                                <span className="text-white font-mono">{profile.aoe_companion_id || 'Oculto'}</span>
                             </div>
                             <div className="flex justify-between py-2 border-b border-stone-800">
                                 <span className="text-stone-500">Steam ID</span>

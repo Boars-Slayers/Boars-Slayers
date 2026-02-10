@@ -7,20 +7,20 @@ export interface PlayerStats {
     gamesPlayed: number;
     streak: number;
     rank: number | null;
-    debug?: any; // Para ver qué dice la API si falla
+    debug?: any;
 }
 
 import { supabase } from './supabase';
 
 /**
- * Obtiene las estadísticas usando el ID numérico de AoE2Insights.
+ * Obtiene las estadísticas usando el ID numérico de AoE2 Companion.
  */
-export const fetchPlayerStats = async (steamId: string, aoeProfileId: string): Promise<PlayerStats | null> => {
-    if (!aoeProfileId) return null;
+export const fetchPlayerStats = async (steamId: string, aoeCompanionId: string): Promise<PlayerStats | null> => {
+    if (!aoeCompanionId) return null;
 
     try {
         const { data, error } = await supabase.functions.invoke('proxy-match-history', {
-            body: { profileId: aoeProfileId }
+            body: { profileId: aoeCompanionId }
         });
 
         if (error || !data?.stats) {
@@ -51,13 +51,12 @@ export const fetchPlayerStats = async (steamId: string, aoeProfileId: string): P
 /**
  * Sincroniza y GUARDA en la base de datos de forma persistente.
  */
-export const syncPlayerStats = async (profileId: string, steamId: string, aoeProfileId: string) => {
-    if (!aoeProfileId) return null;
+export const syncPlayerStats = async (profileId: string, steamId: string, aoeCompanionId: string) => {
+    if (!aoeCompanionId) return null;
 
-    const stats = await fetchPlayerStats(steamId, aoeProfileId);
+    const stats = await fetchPlayerStats(steamId, aoeCompanionId);
     if (!stats) return null;
 
-    // Guardado persistente para que la próxima vez cargue instantáneo desde la DB
     const { error } = await supabase
         .from('profiles')
         .update({

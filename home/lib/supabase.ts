@@ -29,6 +29,8 @@ export interface UserProfile {
     bio?: string;
     favorite_civ?: string;
     aoe_insights_url?: string;
+    aoe_profile_id?: string;
+    aoe_companion_id?: string;
     reason?: string;
     accepted_rules?: boolean;
     contact_email?: string;
@@ -42,7 +44,6 @@ export interface UserProfile {
     created_at: string;
     roles?: ClanRole[];
     badges?: { id: string, image_url: string, description: string }[];
-    aoe_profile_id?: string;
     rank_1v1?: number;
     requires_profile_fix?: boolean;
 }
