@@ -19,16 +19,30 @@ export const fetchPlayerStats = async (steamId: string, aoeCompanionId: string):
     if (!aoeCompanionId) return null;
 
     try {
-        const { data, error } = await supabase.functions.invoke('proxy-match-history', {
-            body: { profileId: aoeCompanionId }
+        console.log("🔍 Iniciando petición para ID:", aoeCompanionId);
+
+        // Obtenemos la URL y la Key directamente del cliente de supabase para no fallar
+        const supabaseUrl = (supabase as any).supabaseUrl;
+        const supabaseKey = (supabase as any).supabaseKey;
+
+        const response = await fetch(`${supabaseUrl}/functions/v1/proxy-match-history`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`
+            },
+            body: JSON.stringify({ profileId: aoeCompanionId })
         });
 
-        if (error) {
-            console.error("Error en Edge Function:", error);
+        if (!response.ok) {
+            console.error(`❌ Error en Edge Function (HTTP ${response.status})`);
             return null;
         }
 
-        const { stats } = data;
+        const data = await response.json();
+
+        console.log("📦 Datos recibidos del Oráculo:", data);
 
         // --- FALLBACK DE EMERGENCIA (CLIENT-SIDE PARSING) ---
         // Si la función en la nube falló al parsear (porque el regex es viejo),
