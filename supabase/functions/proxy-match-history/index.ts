@@ -54,16 +54,35 @@ const fetchFromAPI = async (profileId: string, leaderboardId: number) => {
     }
 };
 
+const fetchMatches = async (profileId: string) => {
+    const url = `https://data.aoe2companion.com/api/v2/matches?profile_id=${profileId}&limit=10`;
+    try {
+        const res = await fetch(url, { headers: { "User-Agent": PROJECT_URL } });
+        if (!res.ok) return { error: `HTTP ${res.status}` };
+        const data = await res.json();
+        return { data: data.matches || [] };
+    } catch (e) {
+        return { error: e.message };
+    }
+};
+
 serve(async (req) => {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
     try {
-        const { profileId } = await req.json();
+        const { profileId, action } = await req.json();
         if (!profileId) throw new Error("Missing profileId");
 
-        console.log(`[ORACLE] Iniciando consulta para ID: ${profileId}`);
+        console.log(`[ORACLE] Iniciando consulta para ID: ${profileId}, Acción: ${action || 'stats'}`);
 
-        // Llamadas concurrentes (asyncio.gather)
+        if (action === 'matches') {
+            const matchesRes = await fetchMatches(profileId);
+            return new Response(JSON.stringify({ profileId, matches: matchesRes.data || [], error: matchesRes.error }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+        }
+
+        // Por defecto: Stats
         const [res1v1, resTG] = await Promise.all([
             fetchFromAPI(profileId, 3), // 1v1
             fetchFromAPI(profileId, 4)  // TG
@@ -75,7 +94,6 @@ serve(async (req) => {
             eloTG: resTG.data?.elo || null,
             winRate: res1v1.data?.winrate || resTG.data?.winrate || 0,
             rank: res1v1.data?.rank || null,
-            // Debug info
             debug: {
                 raw1v1: res1v1.raw,
                 rawTG: resTG.raw,

@@ -1,9 +1,9 @@
 import { useEffect, useState, FC } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { syncPlayerStats, PlayerStats } from '../lib/aoe';
+import { syncPlayerStats, PlayerStats, fetchMatchHistory } from '../lib/aoe';
 import { useAuth } from '../AuthContext';
-import { RefreshCw, Swords, Trophy } from 'lucide-react';
+import { RefreshCw, Swords, Trophy, Clock, User, Map as MapIcon, Calendar } from 'lucide-react';
 
 interface RankedMember {
     id: string;
@@ -18,13 +18,57 @@ interface RankedMember {
 export function RankingPage() {
     const [activeTab, setActiveTab] = useState<'leaderboard' | 'matches'>('leaderboard');
     const [members, setMembers] = useState<RankedMember[]>([]);
+    const [recentMatches, setRecentMatches] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMatches, setLoadingMatches] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const { profile: currentUserProfile } = useAuth();
 
     useEffect(() => {
         loadData();
     }, []);
+
+    useEffect(() => {
+        if (activeTab === 'matches' && recentMatches.length === 0) {
+            loadRecentMatches();
+        }
+    }, [activeTab]);
+
+    const loadRecentMatches = async () => {
+        setLoadingMatches(true);
+        try {
+            // Buscamos partidas para los miembros que tengan companion_id
+            const membersWithId = members.filter(m => m.aoe_companion_id);
+            const allMatches: any[] = [];
+
+            // Para no saturar, pedimos solo de los primeros 10 miembros con ID
+            const limit = Math.min(membersWithId.length, 10);
+
+            const matchPromises = membersWithId.slice(0, limit).map(async (m) => {
+                const matches = await fetchMatchHistory('', 0, m.aoe_companion_id!);
+                return matches.map((match: any) => ({
+                    ...match,
+                    playerName: m.username,
+                    playerAvatar: m.avatar_url
+                }));
+            });
+
+            const results = await Promise.all(matchPromises);
+            results.forEach(res => allMatches.push(...res));
+
+            // Ordenar por fecha desc (las más recientes primero)
+            const sortedMatches = allMatches.sort((a, b) => b.started - a.started);
+
+            // Eliminar duplicados si hay partidas entre miembros del clan
+            const uniqueMatches = Array.from(new Map(sortedMatches.map(m => [m.match_id, m])).values());
+
+            setRecentMatches(uniqueMatches.slice(0, 20)); // Mostrar las 20 más recientes
+        } catch (err) {
+            console.error('Error loading matches:', err);
+        } finally {
+            setLoadingMatches(false);
+        }
+    };
 
     const loadData = async () => {
         setLoading(true);
@@ -204,7 +248,63 @@ export function RankingPage() {
                                 </div>
                             </div>
                         )}
-                        {/* Tab batches skipped for brevity */}
+
+                        {activeTab === 'matches' && (
+                            <div className="space-y-4">
+                                {loadingMatches ? (
+                                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                        <Loader2 size={32} className="text-gold-500 animate-spin" />
+                                        <p className="text-stone-500 text-xs uppercase tracking-widest font-bold">Consultando el historial de guerra...</p>
+                                    </div>
+                                ) : recentMatches.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {recentMatches.map((match) => (
+                                            <div key={match.match_id} className="bg-stone-900/60 border border-white/5 rounded-2xl p-5 hover:border-gold-600/30 transition-all group overflow-hidden relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <img src={match.playerAvatar} className="w-8 h-8 rounded-full border border-white/10" alt="" />
+                                                        <div>
+                                                            <div className="text-xs font-black text-white uppercase tracking-tight">{match.playerName}</div>
+                                                            <div className="text-[10px] text-stone-500 flex items-center gap-1">
+                                                                <Clock size={10} /> {new Date(match.started * 1000).toLocaleString()}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter ${match.ranked ? 'bg-gold-600/20 text-gold-500 border border-gold-600/30' : 'bg-stone-800 text-stone-500'}`}>
+                                                        {match.ranked ? 'Ranked' : 'Unranked'}
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4 relative z-10">
+                                                    <div className="space-y-1">
+                                                        <div className="text-[9px] font-black text-stone-500 uppercase tracking-widest flex items-center gap-1">
+                                                            <MapIcon size={10} /> Mapa
+                                                        </div>
+                                                        <div className="text-sm font-serif font-bold text-white">{match.name || 'Mapa Desconocido'}</div>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <div className="text-[9px] font-black text-stone-500 uppercase tracking-widest flex items-center gap-1">
+                                                            <Swords size={10} /> Tipo
+                                                        </div>
+                                                        <div className="text-sm font-serif font-bold text-white">
+                                                            {match.players?.length === 2 ? '1v1 Combat' : `${match.players?.length / 2}v${match.players?.length / 2} Team Game`}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Detalle de victoria/derrota si está disponible */}
+                                                <div className="absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 bg-gradient-to-br from-gold-600/10 to-transparent rounded-full blur-2xl group-hover:from-gold-600/20 transition-all"></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="bg-stone-900/40 border border-white/5 rounded-2xl p-20 text-center">
+                                        <Clock size={48} className="text-stone-700 mx-auto mb-4" />
+                                        <p className="text-stone-500 italic">No se han registrado batallas recientemente. ¡Id al frente de batalla!</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </>
                 )}
             </div>

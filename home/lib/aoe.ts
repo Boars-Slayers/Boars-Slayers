@@ -119,5 +119,31 @@ export const syncPlayerStats = async (profileId: string, steamId: string, aoeCom
     return stats;
 };
 
-export const fetchMatchHistory = async (_s: string, _c: number, _a: string) => [];
+export const fetchMatchHistory = async (steamId: string, _c: number, aoeCompanionId: string) => {
+    if (!aoeCompanionId) return [];
+
+    try {
+        const supabaseUrl = (supabase as any).supabaseUrl;
+        const supabaseKey = (supabase as any).supabaseKey;
+
+        const response = await fetch(`${supabaseUrl}/functions/v1/proxy-match-history`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`
+            },
+            body: JSON.stringify({ profileId: aoeCompanionId, action: 'matches' })
+        });
+
+        if (!response.ok) return [];
+
+        const data = await response.json();
+        return data.matches || [];
+    } catch (error) {
+        console.error("Error fetching match history:", error);
+        return [];
+    }
+};
+
 export const getClanMatches = async (_m: any) => [];
