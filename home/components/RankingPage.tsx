@@ -29,10 +29,10 @@ export function RankingPage() {
     }, []);
 
     useEffect(() => {
-        if (activeTab === 'matches' && recentMatches.length === 0) {
+        if (activeTab === 'matches' && recentMatches.length === 0 && members.length > 0) {
             loadRecentMatches();
         }
-    }, [activeTab]);
+    }, [activeTab, members]);
 
     const loadRecentMatches = async () => {
         setLoadingMatches(true);

@@ -122,26 +122,29 @@ export const syncPlayerStats = async (profileId: string, steamId: string, aoeCom
 export const fetchMatchHistory = async (_steamId: string, _c: number, aoeCompanionId: string) => {
     if (!aoeCompanionId) return [];
 
-    try {
-        // Intentamos llamar DIRECTAMENTE a la API de AoE2 Companion
-        // Esta API suele permitir peticiones desde navegadores (CORS friendly)
-        const response = await fetch(`https://data.aoe2companion.com/api/v2/matches?profile_id=${aoeCompanionId}&limit=10`);
+    // Lista de rutas a intentar (Directa -> Proxy)
+    const urls = [
+        `https://data.aoe2companion.com/api/v2/matches?profile_id=${aoeCompanionId}&limit=10`,
+        `https://corsproxy.io/?${encodeURIComponent(`https://data.aoe2companion.com/api/v2/matches?profile_id=${aoeCompanionId}&limit=10`)}`
+    ];
 
-        if (!response.ok) {
-            console.error("❌ La API directa de AoE2 falló o bloqueó el acceso.");
-            return [];
+    for (const url of urls) {
+        try {
+            console.log(`⚔️ Intentando obtener batallas (ID: ${aoeCompanionId}) via: ${url.includes('corsproxy') ? 'Proxy' : 'Directo'}`);
+            const response = await fetch(url);
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.matches && data.matches.length > 0) {
+                    return data.matches;
+                }
+            }
+        } catch (error) {
+            console.warn(`⚠️ Intento fallido para url: ${url}`);
         }
-
-        const data = await response.json();
-
-        // La API de v2 devuelve { matches: [...] }
-        return data.matches || [];
-
-    } catch (error) {
-        console.warn("⚠️ Error en llamada directa, intentando vía Proxy de emergencia...");
-        // Si falla por CORS o red, el error se captura aquí.
-        return [];
     }
+
+    return [];
 };
 
 export const getClanMatches = async (_m: any) => [];
