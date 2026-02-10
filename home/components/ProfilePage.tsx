@@ -34,7 +34,7 @@ export const ProfilePage: FC = () => {
                 };
                 setProfile(formattedProfile);
 
-                // 1. CARGA DESDE CACHE
+                // CARGA INICIAL DESDE DB (Para que no se vea vacío mientras pedimos a la API)
                 if (data.elo_1v1 || data.rank_1v1 || data.win_rate_1v1) {
                     setStats({
                         steamId: data.steam_id,
@@ -42,18 +42,17 @@ export const ProfilePage: FC = () => {
                         elo1v1: data.elo_1v1,
                         eloTG: data.elo_tg,
                         winRate1v1: data.win_rate_1v1,
-                        gamesPlayed: data.games_played,
-                        streak: data.streak,
-                        rank: data.rank_1v1
+                        gamesPlayed: data.games_played || 0,
+                        streak: data.streak || 0,
+                        rank: data.rank_1v1,
+                        debug: null
                     });
                 }
 
-                // 2. AUTO-SYNC SI TIENE COMPANION ID Y NO TIENE STATS
-                if (!data.elo_1v1 && data.aoe_companion_id) {
+                // SIEMPRE REFRESCAR EN VIVO SI TENEMOS ID
+                if (data.aoe_companion_id) {
                     handleRefreshStats(data.id, data.steam_id, data.aoe_companion_id);
                 }
-
-
             }
             setLoading(false);
         };

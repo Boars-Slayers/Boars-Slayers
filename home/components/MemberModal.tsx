@@ -52,7 +52,7 @@ export const MemberModal: FC<MemberModalProps> = ({ member, onClose, onViewProfi
         return () => {
             document.body.style.overflow = 'unset';
         };
-    }, [member.steamId]);
+    }, [member.steamId, member.aoeCompanionId]);
 
     const handleClose = () => {
         setIsVisible(false);
