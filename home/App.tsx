@@ -19,6 +19,7 @@ import { RankingPage } from './components/RankingPage';
 import { ClanChat } from './components/ClanChat';
 import { DebatesList } from './components/community/DebatesList';
 import { DebateDetail } from './components/community/DebateDetail';
+import { ProfileFixModal } from './components/ProfileFixModal';
 
 const HomePage: React.FC = () => {
   const { user, login, profile, refreshProfile } = useAuth();
@@ -71,69 +72,88 @@ const HomePage: React.FC = () => {
   );
 };
 
+// Global wrapper to check for profile fixes
+const ProfileFixGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { profile, refreshProfile } = useAuth();
+
+  // Check if user is a member/admin and needs fix
+  if (profile && profile.role !== 'candidate' && profile.requires_profile_fix) {
+    return (
+      <>
+        {children}
+        <ProfileFixModal profile={profile} onSuccess={refreshProfile} />
+      </>
+    );
+  }
+
+  return <>{children}</>;
+};
+
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/user/:username" element={<ProfilePage />} />
-        <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/master-panel" element={<MasterPanel />} />
-        <Route path="/member-panel" element={<MemberPanel />} />
-        <Route path="/tournaments" element={
-          <div className="min-h-screen bg-stone-950 text-gray-200">
-            <Navbar />
-            <TournamentList />
-            <Footer />
-          </div>
-        } />
-        <Route path="/tournaments/:id" element={
-          <div className="min-h-screen bg-stone-950 text-gray-200">
-            <Navbar />
-            <TournamentDetails />
-            <Footer />
-          </div>
-        } />
-        <Route path="/ranking" element={
-          <div className="min-h-screen bg-stone-950 text-gray-200">
-            <Navbar />
-            <RankingPage />
-            <Footer />
-          </div>
-        } />
-        <Route path="/showmatchs" element={
-          <div className="min-h-screen bg-stone-950 text-gray-200">
-            <Navbar />
-            <ShowmatchesPage />
-            <Footer />
-          </div>
-        } />
-        <Route path="/showmatchs/:id" element={<ShowmatchDetail />} />
-        <Route path="/moments" element={
-          <div className="min-h-screen bg-stone-950 text-gray-200">
-            <Navbar />
-            <MomentsPage />
-            <Footer />
-          </div>
-        } />
-        <Route path="/comunidad/debates" element={
-          <div className="min-h-screen bg-stone-950 text-gray-200">
-            <Navbar />
-            <DebatesList />
-            <Footer />
-          </div>
-        } />
-        <Route path="/comunidad/debates/:id" element={
-          <div className="min-h-screen bg-stone-950 text-gray-200">
-            <Navbar />
-            <DebateDetail />
-            <Footer />
-          </div>
-        } />
-        {/* Fallback to home */}
-        <Route path="*" element={<HomePage />} />
-      </Routes>
-      <ClanChat />
+      <ProfileFixGate>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/user/:username" element={<ProfilePage />} />
+          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/master-panel" element={<MasterPanel />} />
+          <Route path="/member-panel" element={<MemberPanel />} />
+          <Route path="/tournaments" element={
+            <div className="min-h-screen bg-stone-950 text-gray-200">
+              <Navbar />
+              <TournamentList />
+              <Footer />
+            </div>
+          } />
+          <Route path="/tournaments/:id" element={
+            <div className="min-h-screen bg-stone-950 text-gray-200">
+              <Navbar />
+              <TournamentDetails />
+              <Footer />
+            </div>
+          } />
+          <Route path="/ranking" element={
+            <div className="min-h-screen bg-stone-950 text-gray-200">
+              <Navbar />
+              <RankingPage />
+              <Footer />
+            </div>
+          } />
+          <Route path="/showmatchs" element={
+            <div className="min-h-screen bg-stone-950 text-gray-200">
+              <Navbar />
+              <ShowmatchesPage />
+              <Footer />
+            </div>
+          } />
+          <Route path="/showmatchs/:id" element={<ShowmatchDetail />} />
+          <Route path="/moments" element={
+            <div className="min-h-screen bg-stone-950 text-gray-200">
+              <Navbar />
+              <MomentsPage />
+              <Footer />
+            </div>
+          } />
+          <Route path="/comunidad/debates" element={
+            <div className="min-h-screen bg-stone-950 text-gray-200">
+              <Navbar />
+              <DebatesList />
+              <Footer />
+            </div>
+          } />
+          <Route path="/comunidad/debates/:id" element={
+            <div className="min-h-screen bg-stone-950 text-gray-200">
+              <Navbar />
+              <DebateDetail />
+              <Footer />
+            </div>
+          } />
+          {/* Fallback to home */}
+          <Route path="*" element={<HomePage />} />
+        </Routes>
+        <ClanChat />
+      </ProfileFixGate>
     </AuthProvider>
   );
 };

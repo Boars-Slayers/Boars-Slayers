@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
-import { X, Camera, Save, Loader2, User, FileText } from 'lucide-react';
+import { X, Camera, Save, Loader2, User, FileText, Link as LinkIcon, Hash } from 'lucide-react';
 import { ImageCropper } from './ImageCropper';
 
 interface ProfileEditorProps {
@@ -14,6 +14,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
     const [bio, setBio] = useState(profile.bio || '');
     const [favoriteCiv, setFavoriteCiv] = useState(profile.favorite_civ || '');
     const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || '');
+    const [steamId, setSteamId] = useState(profile.steam_id || '');
+    const [aoeUrl, setAoeUrl] = useState(profile.aoe_insights_url || '');
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
@@ -38,9 +40,9 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
     const handleCropComplete = async (blob: Blob) => {
         try {
             setUploading(true);
-            setTempImageSrc(null); // Hide cropper immediately or keep it? Better hide.
+            setTempImageSrc(null);
 
-            const fileName = `${profile.id}-${Math.random()}.jpg`; // Always JPG from cropper
+            const fileName = `${profile.id}-${Math.random()}.jpg`;
             const filePath = `${fileName}`;
 
             const { error: uploadError } = await supabase.storage
@@ -67,6 +69,11 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
     const handleSave = async () => {
         try {
             setSaving(true);
+
+            // Extract AoE Profile ID from URL
+            const profileIdMatch = aoeUrl.match(/\/user\/(\d+)/);
+            const extractedProfileId = profileIdMatch ? profileIdMatch[1] : profile.aoe_profile_id;
+
             const { error } = await supabase
                 .from('profiles')
                 .update({
@@ -74,6 +81,9 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
                     bio,
                     favorite_civ: favoriteCiv,
                     avatar_url: avatarUrl,
+                    steam_id: steamId,
+                    aoe_insights_url: aoeUrl,
+                    aoe_profile_id: extractedProfileId
                 })
                 .eq('id', profile.id);
 
@@ -107,10 +117,9 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
                 />
             )}
 
-            <div className={`relative w-full max-w-md bg-stone-900 border border-gold-600/30 rounded-2xl shadow-2xl transform transition-all duration-300 ${isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-10'}`}>
-                {/* ... header ... */}
-                <div className="p-6 border-b border-gold-600/20 flex justify-between items-center bg-black/20">
-                    <h2 className="text-xl font-serif font-bold text-white tracking-wide">Editar Perfil</h2>
+            <div className={`relative w-full max-w-md bg-stone-900 border border-gold-600/30 rounded-2xl shadow-2xl transform transition-all duration-300 ${isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-10'} max-h-[90vh] overflow-y-auto custom-scrollbar`}>
+                <div className="sticky top-0 z-20 p-6 border-b border-gold-600/20 flex justify-between items-center bg-stone-900/95 backdrop-blur-sm">
+                    <h2 className="text-xl font-serif font-bold text-white tracking-wide uppercase">Editar Perfil de Guerrero</h2>
                     <button onClick={closeWithAnimation} className="text-stone-500 hover:text-white transition-colors">
                         <X size={24} />
                     </button>
@@ -139,41 +148,71 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
                     {/* Form Fields */}
                     <div className="space-y-4">
                         <div className="space-y-1">
-                            <label className="flex items-center gap-2 text-xs font-bold text-gold-500 uppercase tracking-widest px-1">
-                                <User size={12} /> Nombre de Guerrero
+                            <label className="flex items-center gap-2 text-[10px] font-black text-gold-500 uppercase tracking-widest px-1">
+                                <User size={12} /> Nombre de Batalla
                             </label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="w-full bg-stone-800 border border-stone-700 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all font-medium"
+                                className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all font-medium"
                                 placeholder="Tu nombre..."
                             />
                         </div>
 
-                        <div className="space-y-1">
-                            <label className="flex items-center gap-2 text-xs font-bold text-gold-500 uppercase tracking-widest px-1">
-                                <FileText size={12} /> Civilización de Honor
-                            </label>
-                            <input
-                                type="text"
-                                value={favoriteCiv}
-                                onChange={(e) => setFavoriteCiv(e.target.value)}
-                                className="w-full bg-stone-800 border border-stone-700 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all font-medium text-sm"
-                                placeholder="Ej: Mongoles, Bizantinos..."
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-gold-500 uppercase tracking-widest px-1">
+                                    <Hash size={12} /> Steam ID
+                                </label>
+                                <input
+                                    type="text"
+                                    value={steamId}
+                                    onChange={(e) => setSteamId(e.target.value)}
+                                    className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all font-mono text-sm"
+                                    placeholder="7656..."
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-gold-500 uppercase tracking-widest px-1">
+                                    <FileText size={12} /> Civilización
+                                </label>
+                                <input
+                                    type="text"
+                                    value={favoriteCiv}
+                                    onChange={(e) => setFavoriteCiv(e.target.value)}
+                                    className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all font-medium text-sm"
+                                    placeholder="Ej: Mongoles"
+                                />
+                            </div>
                         </div>
 
                         <div className="space-y-1">
-                            <label className="flex items-center gap-2 text-xs font-bold text-gold-500 uppercase tracking-widest px-1">
+                            <label className="flex items-center gap-2 text-[10px] font-black text-gold-500 uppercase tracking-widest px-1">
+                                <LinkIcon size={12} /> AoE Insights URL
+                            </label>
+                            <input
+                                type="text"
+                                value={aoeUrl}
+                                onChange={(e) => setAoeUrl(e.target.value)}
+                                className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all text-xs"
+                                placeholder="https://www.aoe2insights.com/user/..."
+                            />
+                            <p className="text-[10px] text-stone-500 px-1 mt-1 italic">
+                                Necesaria para vincular tus estadísticas de combate.
+                            </p>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="flex items-center gap-2 text-[10px] font-black text-gold-500 uppercase tracking-widest px-1">
                                 <FileText size={12} /> Crónica (Descripción)
                             </label>
                             <textarea
                                 value={bio}
                                 onChange={(e) => setBio(e.target.value)}
                                 rows={3}
-                                className="w-full bg-stone-800 border border-stone-700 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all font-medium resize-none text-sm"
-                                placeholder="Cuéntanos tu historia en el campo de batalla..."
+                                className="w-full bg-stone-800 border border-stone-700/50 rounded-lg p-3 text-white focus:border-gold-600 outline-none transition-all font-medium resize-none text-sm"
+                                placeholder="Cuéntanos tu historia..."
                             />
                         </div>
                     </div>
@@ -182,10 +221,10 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, onClose, 
                     <button
                         onClick={handleSave}
                         disabled={saving || uploading}
-                        className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-700 hover:from-gold-500 hover:to-gold-600 text-stone-900 font-bold rounded-xl shadow-lg shadow-gold-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        className="w-full py-4 mt-2 bg-gradient-to-r from-gold-600 to-gold-700 hover:from-gold-500 hover:to-gold-600 text-stone-900 font-black uppercase tracking-widest rounded-xl shadow-lg shadow-gold-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 group"
                     >
-                        {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-                        Guardar Cambios
+                        {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} className="group-hover:scale-110 transition-transform" />}
+                        Guardar Crónicas
                     </button>
                 </div>
             </div>

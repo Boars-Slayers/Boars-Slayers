@@ -140,7 +140,6 @@ export const MasterPanel: React.FC = () => {
 
     const [fullEditingUser, setFullEditingUser] = useState<UserProfile | null>(null);
 
-    // ... (existing code)
 
     const handleUpdateUser = async (userId: string, updates: any) => {
         const { error } = await supabase
@@ -176,7 +175,7 @@ export const MasterPanel: React.FC = () => {
             <Navbar />
 
             <main className="max-w-7xl mx-auto px-6 pt-32 pb-12">
-                {/* ... (Header code remains same) ... */}
+                {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-10 gap-4">
                     <div>
                         <h1 className="text-4xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-gold-500 flex items-center gap-3">
@@ -184,7 +183,7 @@ export const MasterPanel: React.FC = () => {
                         </h1>
                         <p className="text-stone-400 mt-2">Control total sobre el clan y sus recursos.</p>
                     </div>
-                    {/* ... (Tabs code remains same) ... */}
+
                     <div className="flex bg-stone-900/50 p-1 rounded-lg border border-white/5 overflow-x-auto">
                         <button
                             onClick={() => setActiveTab('users')}
@@ -431,7 +430,7 @@ export const MasterPanel: React.FC = () => {
                 {/* Full User Editor Modal */}
                 {fullEditingUser && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                        <div className="bg-stone-900 border border-purple-500/30 rounded-xl p-6 w-full max-w-md animate-in fade-in zoom-in-95 shadow-[0_0_50px_rgba(168,85,247,0.15)]">
+                        <div className="bg-stone-900 border border-purple-500/30 rounded-xl p-6 w-full max-w-md animate-in fade-in zoom-in-95 shadow-[0_0_50px_rgba(168,85,247,0.15)] max-h-[90vh] overflow-y-auto custom-scrollbar">
                             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                                 <Crown className="text-purple-500" size={24} /> Editar Guerrero
                             </h3>
@@ -455,26 +454,49 @@ export const MasterPanel: React.FC = () => {
                                         className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none text-xs"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Rol Principal</label>
-                                    <select
-                                        defaultValue={fullEditingUser.role}
-                                        id="edit-role"
-                                        className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none"
-                                    >
-                                        <option value="member">Miembro</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="web_master">Web Master</option>
-                                        <option value="candidate">Candidato</option>
-                                    </select>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Rol Principal</label>
+                                        <select
+                                            defaultValue={fullEditingUser.role}
+                                            id="edit-role"
+                                            className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none"
+                                        >
+                                            <option value="member">Miembro</option>
+                                            <option value="admin">Admin</option>
+                                            <option value="web_master">Web Master</option>
+                                            <option value="candidate">Candidato</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Steam ID</label>
+                                        <input
+                                            type="text"
+                                            defaultValue={fullEditingUser.steam_id || ''}
+                                            id="edit-steam"
+                                            className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none font-mono"
+                                        />
+                                    </div>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Steam ID</label>
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-1 text-gold-500">AoE Profile ID (Numérico)</label>
                                     <input
                                         type="text"
-                                        defaultValue={fullEditingUser.steam_id || ''}
-                                        id="edit-steam"
-                                        className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none font-mono"
+                                        defaultValue={fullEditingUser.aoe_profile_id || ''}
+                                        id="edit-aoe-id"
+                                        placeholder="Ej: 10383990"
+                                        className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-gold-500 outline-none font-mono"
+                                    />
+                                    <p className="text-[10px] text-stone-600 mt-1">Este es el ID que usa AoE Companion. Prioritario sobre Steam ID.</p>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-1">AoE Insights URL</label>
+                                    <input
+                                        type="text"
+                                        defaultValue={fullEditingUser.aoe_insights_url || ''}
+                                        id="edit-aoe-url"
+                                        placeholder="https://www.aoe2insights.com/user/..."
+                                        className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none text-xs"
                                     />
                                 </div>
                             </div>
@@ -492,8 +514,17 @@ export const MasterPanel: React.FC = () => {
                                         const avatar_url = (document.getElementById('edit-avatar') as HTMLInputElement).value;
                                         const role = (document.getElementById('edit-role') as HTMLSelectElement).value;
                                         const steam_id = (document.getElementById('edit-steam') as HTMLInputElement).value;
+                                        const aoe_profile_id = (document.getElementById('edit-aoe-id') as HTMLInputElement).value;
+                                        const aoe_insights_url = (document.getElementById('edit-aoe-url') as HTMLInputElement).value;
 
-                                        handleUpdateUser(fullEditingUser.id, { username, avatar_url, role, steam_id });
+                                        handleUpdateUser(fullEditingUser.id, {
+                                            username,
+                                            avatar_url,
+                                            role,
+                                            steam_id,
+                                            aoe_profile_id: aoe_profile_id || null,
+                                            aoe_insights_url: aoe_insights_url || null
+                                        });
                                     }}
                                     className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors shadow-lg shadow-purple-900/20"
                                 >

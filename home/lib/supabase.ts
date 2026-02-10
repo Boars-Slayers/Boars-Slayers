@@ -44,4 +44,5 @@ export interface UserProfile {
     badges?: { id: string, image_url: string, description: string }[];
     aoe_profile_id?: string;
     rank_1v1?: number;
+    requires_profile_fix?: boolean;
 }
