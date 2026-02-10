@@ -41,8 +41,14 @@ export const fetchPlayerStats = async (steamId: string, aoeCompanionId: string):
         }
 
         const data = await response.json();
+        const stats = data.stats;
 
-        console.log("📦 Datos recibidos del Oráculo:", data);
+        if (!stats) {
+            console.error("❌ La respuesta no contiene estadísticas válidas");
+            return null;
+        }
+
+        console.log("📦 Datos recibidos del Oráculo:", stats);
 
         // --- FALLBACK DE EMERGENCIA (CLIENT-SIDE PARSING) ---
         // Si la función en la nube falló al parsear (porque el regex es viejo),
