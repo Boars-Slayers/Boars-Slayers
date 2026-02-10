@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, FC } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
 import { X, ExternalLink, Shield, CheckCircle2 } from 'lucide-react';
 import { syncPlayerStats } from '../lib/aoe';
@@ -11,7 +11,7 @@ interface JoinModalProps {
     onLogin?: () => void;
 }
 
-export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, onSuccess, onLogin }) => {
+export const JoinModal: FC<JoinModalProps> = ({ user, profile, onClose, onSuccess, onLogin }) => {
     const [steamId, setSteamId] = useState(profile?.steam_id || '');
     const [aoeUrl, setAoeUrl] = useState(profile?.aoe_insights_url || '');
     const [aoeCompanionId, setAoeCompanionId] = useState(profile?.aoe_companion_id || '');

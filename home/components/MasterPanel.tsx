@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, FC } from 'react';
 import { supabase, UserProfile, ClanRole } from '../lib/supabase';
 import { Check, X, Search, Loader2, Settings, Crown } from 'lucide-react';
 import { Navbar } from './Navbar';
@@ -12,7 +12,7 @@ import { ShowmatchManager } from './ShowmatchManager';
 import { UserCreator } from './UserCreator';
 import { Award, UserPlus } from 'lucide-react';
 
-export const MasterPanel: React.FC = () => {
+export const MasterPanel: FC = () => {
     const [activeTab, setActiveTab] = useState<'users' | 'badges' | 'roles' | 'tournaments' | 'showmatches'>('users');
     const [filter, setFilter] = useState<'all' | 'candidate' | 'member'>('all');
     const [search, setSearch] = useState('');

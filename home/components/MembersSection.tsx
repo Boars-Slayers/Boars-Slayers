@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, FC } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
 import { MemberCard } from './MemberCard';
 import { MemberModal } from './MemberModal';
 import { Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export const MembersSection: React.FC = () => {
+export const MembersSection: FC = () => {
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMember, setSelectedMember] = useState<UserProfile | null>(null);

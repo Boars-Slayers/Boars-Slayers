@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, FC } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, UserProfile } from '../lib/supabase';
 import { ExternalLink, MessageSquare, Loader2, Award, Swords, TrendingUp, Trophy, RefreshCw, AlertCircle, Terminal, ShieldCheck } from 'lucide-react';
@@ -7,7 +7,7 @@ import { Footer } from './Footer';
 import { syncPlayerStats, PlayerStats } from '../lib/aoe';
 import { useAuth } from '../AuthContext';
 
-export const ProfilePage: React.FC = () => {
+export const ProfilePage: FC = () => {
     const { username } = useParams<{ username: string }>();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [stats, setStats] = useState<PlayerStats | null>(null);

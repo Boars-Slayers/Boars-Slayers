@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, FC } from 'react';
 import { Member } from '../types';
 import { X, Trophy, Crown, TrendingUp, Swords, User, Loader2, Settings, Save } from 'lucide-react';
 import { fetchPlayerStats, PlayerStats } from '../lib/aoe';
@@ -16,7 +16,7 @@ interface MemberModalProps {
     onViewProfile?: () => void;
 }
 
-export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onViewProfile }) => {
+export const MemberModal: FC<MemberModalProps> = ({ member, onClose, onViewProfile }) => {
     const [isVisible, setIsVisible] = useState(false);
     const [stats, setStats] = useState<PlayerStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(false);
