@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { syncPlayerStats, PlayerStats, fetchMatchHistory } from '../lib/aoe';
 import { useAuth } from '../AuthContext';
-import { RefreshCw, Swords, Trophy, Clock, Map as MapIcon } from 'lucide-react';
+import { RefreshCw, Swords, Trophy, Clock, Map as MapIcon, Loader2 } from 'lucide-react';
 
 interface RankedMember {
     id: string;
@@ -49,12 +49,13 @@ export function RankingPage() {
                 return matches.map((match: any) => ({
                     ...match,
                     playerName: m.username,
-                    playerAvatar: m.avatar_url
+                    playerAvatar: m.avatar_url,
+                    aoeCompanionId: m.aoe_companion_id
                 }));
             });
 
             const results = await Promise.all(matchPromises);
-            results.forEach(res => allMatches.push(...res));
+            results.forEach((res: any[]) => allMatches.push(...res));
 
             // Ordenar por fecha desc (las más recientes primero)
             const sortedMatches = allMatches.sort((a, b) => b.started - a.started);
@@ -258,44 +259,54 @@ export function RankingPage() {
                                     </div>
                                 ) : recentMatches.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {recentMatches.map((match) => (
-                                            <div key={match.match_id} className="bg-stone-900/60 border border-white/5 rounded-2xl p-5 hover:border-gold-600/30 transition-all group overflow-hidden relative">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <img src={match.playerAvatar} className="w-8 h-8 rounded-full border border-white/10" alt="" />
-                                                        <div>
-                                                            <div className="text-xs font-black text-white uppercase tracking-tight">{match.playerName}</div>
-                                                            <div className="text-[10px] text-stone-500 flex items-center gap-1">
-                                                                <Clock size={10} /> {new Date(match.started * 1000).toLocaleString()}
+                                        {recentMatches.map((match: any) => {
+                                            const playerStats = match.players?.find((p: any) => p.profile_id.toString() === match.aoeCompanionId?.toString());
+                                            const isWin = playerStats?.result === 1;
+
+                                            return (
+                                                <div key={match.match_id} className="bg-stone-900/60 border border-white/5 rounded-2xl p-5 hover:border-gold-600/30 transition-all group overflow-hidden relative">
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <img src={match.playerAvatar} className="w-8 h-8 rounded-full border border-white/10" alt="" />
+                                                            <div>
+                                                                <div className="text-xs font-black text-white uppercase tracking-tight">{match.playerName}</div>
+                                                                <div className="text-[10px] text-stone-500 flex items-center gap-1">
+                                                                    <Clock size={10} /> {new Date(match.started * 1000).toLocaleString()}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <div className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter ${isWin ? 'bg-emerald-500/20 text-emerald-500' : 'bg-rose-500/20 text-rose-500'}`}>
+                                                                {isWin ? 'Victoria' : 'Derrota'}
+                                                            </div>
+                                                            <div className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter ${match.ranked ? 'bg-gold-600/20 text-gold-500 border border-gold-600/30' : 'bg-stone-800 text-stone-500'}`}>
+                                                                {match.ranked ? 'Ranked' : 'Unranked'}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter ${match.ranked ? 'bg-gold-600/20 text-gold-500 border border-gold-600/30' : 'bg-stone-800 text-stone-500'}`}>
-                                                        {match.ranked ? 'Ranked' : 'Unranked'}
-                                                    </div>
-                                                </div>
 
-                                                <div className="grid grid-cols-2 gap-4 relative z-10">
-                                                    <div className="space-y-1">
-                                                        <div className="text-[9px] font-black text-stone-500 uppercase tracking-widest flex items-center gap-1">
-                                                            <MapIcon size={10} /> Mapa
+                                                    <div className="grid grid-cols-2 gap-4 relative z-10">
+                                                        <div className="space-y-1">
+                                                            <div className="text-[9px] font-black text-stone-500 uppercase tracking-widest flex items-center gap-1">
+                                                                <MapIcon size={10} /> Mapa
+                                                            </div>
+                                                            <div className="text-sm font-serif font-bold text-white">{match.name || 'Batalla Sangrienta'}</div>
                                                         </div>
-                                                        <div className="text-sm font-serif font-bold text-white">{match.name || 'Mapa Desconocido'}</div>
+                                                        <div className="space-y-1">
+                                                            <div className="text-[9px] font-black text-stone-500 uppercase tracking-widest flex items-center gap-1">
+                                                                <Swords size={10} /> Tipo
+                                                            </div>
+                                                            <div className="text-sm font-serif font-bold text-white">
+                                                                {match.players?.length === 2 ? '1v1 Combat' : `${match.players?.length / 2}v${match.players?.length / 2} Team Game`}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="space-y-1">
-                                                        <div className="text-[9px] font-black text-stone-500 uppercase tracking-widest flex items-center gap-1">
-                                                            <Swords size={10} /> Tipo
-                                                        </div>
-                                                        <div className="text-sm font-serif font-bold text-white">
-                                                            {match.players?.length === 2 ? '1v1 Combat' : `${match.players?.length / 2}v${match.players?.length / 2} Team Game`}
-                                                        </div>
-                                                    </div>
-                                                </div>
 
-                                                {/* Detalle de victoria/derrota si está disponible */}
-                                                <div className="absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 bg-gradient-to-br from-gold-600/10 to-transparent rounded-full blur-2xl group-hover:from-gold-600/20 transition-all"></div>
-                                            </div>
-                                        ))}
+                                                    {/* Detalle de victoria/derrota si está disponible */}
+                                                    <div className={`absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 bg-gradient-to-br ${isWin ? 'from-emerald-500/10' : 'from-rose-500/10'} to-transparent rounded-full blur-2xl group-hover:opacity-100 opacity-50 transition-all`}></div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 ) : (
                                     <div className="bg-stone-900/40 border border-white/5 rounded-2xl p-20 text-center">
@@ -312,6 +323,4 @@ export function RankingPage() {
     );
 }
 
-const Loader2: FC<{ size: number, className: string }> = ({ size, className }) => (
-    <RefreshCw size={size} className={`animate-spin ${className}`} />
-);
+// Eliminamos Loader2 local ya que lo importamos de lucide-react

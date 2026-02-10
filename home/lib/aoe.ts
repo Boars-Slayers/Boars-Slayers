@@ -122,25 +122,39 @@ export const syncPlayerStats = async (profileId: string, steamId: string, aoeCom
 export const fetchMatchHistory = async (_steamId: string, _c: number, aoeCompanionId: string) => {
     if (!aoeCompanionId) return [];
 
-    // Lista de rutas a intentar (Directa -> Proxy)
-    const urls = [
-        `https://data.aoe2companion.com/api/v2/matches?profile_id=${aoeCompanionId}&limit=10`,
-        `https://corsproxy.io/?${encodeURIComponent(`https://data.aoe2companion.com/api/v2/matches?profile_id=${aoeCompanionId}&limit=10`)}`
+    // Oficial World's Edge link API
+    const officialUrl = `https://aoe-api.worldsedgelink.com/community/leaderboard/getActualMatchHistory?title=age2&profile_ids=%5B${aoeCompanionId}%5D`;
+
+    // Lista de proxies a intentar
+    const proxies = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(officialUrl)}`,
+        `https://cors-anywhere.herokuapp.com/${officialUrl}`
     ];
 
-    for (const url of urls) {
+    for (const proxyUrl of proxies) {
         try {
-            console.log(`⚔️ Intentando obtener batallas (ID: ${aoeCompanionId}) via: ${url.includes('corsproxy') ? 'Proxy' : 'Directo'}`);
-            const response = await fetch(url);
+            console.log(`⚔️ Intentando obtener batallas (ID: ${aoeCompanionId}) via: ${proxyUrl.includes('allorigins') ? 'AllOrigins' : 'CORSProxy'}`);
+            const response = await fetch(proxyUrl);
 
             if (response.ok) {
                 const data = await response.json();
-                if (data.matches && data.matches.length > 0) {
-                    return data.matches;
+
+                // Formato oficial: { result: { matchHistoryStats: [...] } }
+                if (data.result && data.result.matchHistoryStats) {
+                    return data.result.matchHistoryStats.map((m: any) => ({
+                        match_id: m.id,
+                        name: m.description || "Batalla Sangrienta",
+                        started: m.completiontime,
+                        ranked: m.matchtype_id === 1,
+                        players: (m.matchhistoryreportresults || []).map((r: any) => ({
+                            profile_id: r.profile_id,
+                            result: r.resulttype === 1 ? 1 : 0
+                        }))
+                    }));
                 }
             }
         } catch (error) {
-            console.warn(`⚠️ Intento fallido para url: ${url}`);
+            console.warn(`⚠️ Intento fallido para proxy: ${proxyUrl}`);
         }
     }
 
