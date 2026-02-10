@@ -3,27 +3,28 @@ export interface PlayerStats {
     name: string;
     elo1v1: number | null;
     eloTG: number | null;
-    winRate1v1: number | null; // Percentage
+    winRate1v1: number | null;
     gamesPlayed: number;
-    streak: number; // positive for win, negative for loss
-    rank: number | null; // Global Rank from AoE2Companion
+    streak: number;
+    rank: number | null;
 }
 
 import { supabase } from './supabase';
 
 /**
- * Fetches player stats using the Supabase Edge Function (which calls AoE2Companion API).
+ * STRICTLY fetches player stats using the ao2insights numeric ID via Edge Function.
  */
 export const fetchPlayerStats = async (steamId: string, aoeProfileId?: string | null): Promise<PlayerStats | null> => {
-    // Prioritize aoeProfileId (numeric ID from aoe2insights/companion)
-    const pid = aoeProfileId || steamId;
-
-    if (!pid) return null;
+    // If we don't have the numeric ID, we don't call the API.
+    if (!aoeProfileId) {
+        console.warn("Cannot fetch stats: Missing numeric AoE Profile ID (aoe2insights ID).");
+        return null;
+    }
 
     try {
         const { data, error } = await supabase.functions.invoke('proxy-match-history', {
             body: {
-                profileId: pid
+                profileId: aoeProfileId
             }
         });
 
@@ -52,9 +53,11 @@ export const fetchPlayerStats = async (steamId: string, aoeProfileId?: string | 
 };
 
 /**
- * Fetches stats and saves them to Supabase to avoid hitting the API too often.
+ * Fetches stats and saves them to Supabase.
  */
 export const syncPlayerStats = async (profileId: string, steamId: string, aoeProfileId?: string | null) => {
+    if (!aoeProfileId) return null;
+
     const stats = await fetchPlayerStats(steamId, aoeProfileId);
     if (!stats) return null;
 
@@ -74,10 +77,6 @@ export const syncPlayerStats = async (profileId: string, steamId: string, aoePro
     return stats;
 };
 
-/**
- * Match history is now disabled in the Edge Function (scraping removed).
- * Returning empty for now to avoid frontend errors.
- */
 export const fetchMatchHistory = async (_steamId: string, _count: number = 10, _aoeProfileId?: string | null): Promise<import('../types').Match[]> => {
     return [];
 };

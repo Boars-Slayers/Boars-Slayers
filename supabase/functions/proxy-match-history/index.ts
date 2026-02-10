@@ -19,7 +19,6 @@ const fetchNightbotStats = async (profileId: string, leaderboardId: number = 3) 
         if (!res.ok) return null;
 
         let text = await res.text();
-        // Standardize text (remove quotes, non-breaking spaces)
         text = text.trim().replace(/\u00A0/g, " ").replace(/^"|"$/g, "");
 
         const match = text.match(pattern);
@@ -47,46 +46,42 @@ serve(async (req) => {
         const { profileId } = await req.json();
 
         if (!profileId) {
-            return new Response(JSON.stringify({ error: 'Missing profileId' }), {
+            return new Response(JSON.stringify({ error: 'Missing numeric profileId' }), {
                 status: 400,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
         }
 
-        console.log(`Fetching Nightbot stats for Profile ID: ${profileId}`);
+        console.log(`Fetching Nightbot stats for STRICT Profile ID: ${profileId}`);
 
-        // Fetch 1v1 and TG concurrently
+        // Fetch 1v1 and TG concurrently using the exact ID provided
         const [stats1v1, statsTG] = await Promise.all([
             fetchNightbotStats(profileId, 3),
             fetchNightbotStats(profileId, 4)
         ]);
 
-        // If no stats found at all
         if (!stats1v1 && !statsTG) {
             return new Response(JSON.stringify({
                 profileId,
                 stats: null,
-                matches: [],
-                message: 'Player not found in leaderboards'
+                error: 'Player not found with this numeric ID'
             }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
         }
 
-        // Combine stats
         const combinedStats = {
             name: stats1v1?.name || statsTG?.name || "Unknown",
             elo1v1: stats1v1?.elo || null,
             eloTG: statsTG?.elo || null,
             winRate: stats1v1?.winrate || statsTG?.winrate || 0,
             rank: stats1v1?.rank || null,
-            gamesPlayed: 0 // Nightbot API doesn't provide total games
+            gamesPlayed: 0
         };
 
         return new Response(JSON.stringify({
             profileId,
-            stats: combinedStats,
-            matches: [] // Scraper removed as requested
+            stats: combinedStats
         }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
