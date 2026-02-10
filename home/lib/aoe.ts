@@ -19,29 +19,18 @@ export const fetchPlayerStats = async (steamId: string, aoeCompanionId: string):
     if (!aoeCompanionId) return null;
 
     try {
-        console.log("🔍 Iniciando petición para ID:", aoeCompanionId);
+        console.log("🔍 Pidiendo estadísticas al Oráculo para:", aoeCompanionId);
 
-        // Obtenemos la URL y la Key directamente del cliente de supabase para no fallar
-        const supabaseUrl = (supabase as any).supabaseUrl;
-        const supabaseKey = (supabase as any).supabaseKey;
-
-        const response = await fetch(`${supabaseUrl}/functions/v1/proxy-match-history`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': supabaseKey,
-                'Authorization': `Bearer ${supabaseKey}`
-            },
-            body: JSON.stringify({ profileId: aoeCompanionId })
+        const { data, error } = await supabase.functions.invoke('proxy-match-history', {
+            body: { profileId: aoeCompanionId, action: 'stats' }
         });
 
-        if (!response.ok) {
-            console.error(`❌ Error en Edge Function (HTTP ${response.status})`);
+        if (error) {
+            console.error(`❌ Error en Edge Function:`, error);
             return null;
         }
 
-        const data = await response.json();
-        const stats = data.stats;
+        const stats = data?.stats;
 
         if (!stats) {
             console.error("❌ La respuesta no contiene estadísticas válidas");
@@ -122,30 +111,21 @@ export const syncPlayerStats = async (profileId: string, steamId: string, aoeCom
 export const fetchMatchHistory = async (_steamId: string, _c: number, aoeCompanionId: string) => {
     if (!aoeCompanionId) return [];
 
-    // --- PRIORIDAD 1: Tu propia Edge Function (Sin problemas de CORS) ---
+    // --- PRIORIDAD 1: Tu propia Edge Function (RECOMENDADO) ---
     try {
-        const supabaseUrl = (supabase as any).supabaseUrl;
-        const supabaseKey = (supabase as any).supabaseKey;
-
-        const response = await fetch(`${supabaseUrl}/functions/v1/proxy-match-history`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': supabaseKey,
-                'Authorization': `Bearer ${supabaseKey}`
-            },
-            body: JSON.stringify({ profileId: aoeCompanionId, action: 'matches' })
+        console.log(`⚔️ Consultando batallas de ${aoeCompanionId} vía Supabase...`);
+        const { data, error } = await supabase.functions.invoke('proxy-match-history', {
+            body: { profileId: aoeCompanionId, action: 'matches' }
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            if (data.matches && data.matches.length > 0) {
-                console.log(`✅ Batallas (ID: ${aoeCompanionId}) obtenidas vía Supabase Edge Function.`);
-                return data.matches;
-            }
+        if (!error && data?.matches && data.matches.length > 0) {
+            console.log(`✅ Batallas obtenidas con éxito vía Supabase.`);
+            return data.matches;
         }
+
+        if (error) console.warn("⚠️ Error en Edge Function:", error);
     } catch (e) {
-        console.warn("⚠️ Edge Function no disponible o falló, intentando proxies externos...");
+        console.warn("⚠️ Fallo crítico en llamada a Supabase, intentando proxies...");
     }
 
     const officialUrl = `https://aoe-api.worldsedgelink.com/community/leaderboard/getActualMatchHistory?title=age2&profile_ids=%5B${aoeCompanionId}%5D`;

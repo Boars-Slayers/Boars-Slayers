@@ -55,12 +55,31 @@ const fetchFromAPI = async (profileId: string, leaderboardId: number) => {
 };
 
 const fetchMatches = async (profileId: string) => {
-    const url = `https://data.aoe2companion.com/api/v2/matches?profile_id=${profileId}&limit=10`;
+    // Oficial World's Edge link API
+    const url = `https://aoe-api.worldsedgelink.com/community/leaderboard/getActualMatchHistory?title=age2&profile_ids=%5B${profileId}%5D`;
+
     try {
         const res = await fetch(url, { headers: { "User-Agent": PROJECT_URL } });
         if (!res.ok) return { error: `HTTP ${res.status}` };
+
         const data = await res.json();
-        return { data: data.matches || [] };
+
+        // Mapeamos el formato oficial al formato simplificado que usa el clan
+        if (data.result && data.result.matchHistoryStats) {
+            const matches = data.result.matchHistoryStats.map((m: any) => ({
+                match_id: m.id,
+                name: m.description || "Batalla Sangrienta",
+                started: m.completiontime,
+                ranked: m.matchtype_id === 1,
+                players: (m.matchhistoryreportresults || []).map((r: any) => ({
+                    profile_id: r.profile_id,
+                    result: r.resulttype === 1 ? 1 : 0
+                }))
+            }));
+            return { data: matches };
+        }
+
+        return { data: [] };
     } catch (e) {
         return { error: e.message };
     }
