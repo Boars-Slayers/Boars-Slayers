@@ -119,7 +119,7 @@ export const syncPlayerStats = async (profileId: string, steamId: string, aoeCom
     return stats;
 };
 
-export const fetchMatchHistory = async (steamId: string, _c: number, aoeCompanionId: string) => {
+export const fetchMatchHistory = async (_steamId: string, _c: number, aoeCompanionId: string) => {
     if (!aoeCompanionId) return [];
 
     try {

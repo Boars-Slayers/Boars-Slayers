@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { syncPlayerStats, PlayerStats, fetchMatchHistory } from '../lib/aoe';
 import { useAuth } from '../AuthContext';
-import { RefreshCw, Swords, Trophy, Clock, User, Map as MapIcon, Calendar } from 'lucide-react';
+import { RefreshCw, Swords, Trophy, Clock, Map as MapIcon } from 'lucide-react';
 
 interface RankedMember {
     id: string;
