@@ -23,22 +23,49 @@ export const fetchPlayerStats = async (steamId: string, aoeCompanionId: string):
             body: { profileId: aoeCompanionId }
         });
 
-        if (error || !data?.stats) {
+        if (error) {
             console.error("Error en Edge Function:", error);
             return null;
         }
 
         const { stats } = data;
 
+        // --- FALLBACK DE EMERGENCIA (CLIENT-SIDE PARSING) ---
+        // Si la función en la nube falló al parsear (porque el regex es viejo),
+        // lo hacemos aquí mismo en el navegador usando los datos RAW que la nube siempre envía.
+
+        let finalElo1v1 = stats.elo1v1;
+        let finalEloTG = stats.eloTG;
+        let finalRank = stats.rank;
+        let finalWinRate = stats.winRate;
+
+        if (finalElo1v1 === null && stats.debug?.raw1v1) {
+            const raw = stats.debug.raw1v1;
+            const eloMatch = raw.match(/\((\d+)\)/);
+            if (eloMatch) finalElo1v1 = parseInt(eloMatch[1]);
+
+            const rankMatch = raw.match(/Rank\s#(\d+)/);
+            if (rankMatch) finalRank = parseInt(rankMatch[1]);
+
+            const winMatch = raw.match(/(\d+)%\swinrate/);
+            if (winMatch) finalWinRate = parseInt(winMatch[1]);
+        }
+
+        if (finalEloTG === null && stats.debug?.rawTG) {
+            const rawTG = stats.debug.rawTG;
+            const eloMatchTG = rawTG.match(/\((\d+)\)/);
+            if (eloMatchTG) finalEloTG = parseInt(eloMatchTG[1]);
+        }
+
         return {
             steamId: steamId || '',
-            name: stats.name,
-            elo1v1: stats.elo1v1,
-            eloTG: stats.eloTG,
-            winRate1v1: stats.winRate,
+            name: stats.name || "Desconocido",
+            elo1v1: finalElo1v1,
+            eloTG: finalEloTG,
+            winRate1v1: finalWinRate,
             gamesPlayed: stats.gamesPlayed || 0,
             streak: 0,
-            rank: stats.rank,
+            rank: finalRank,
             debug: stats.debug
         };
 
