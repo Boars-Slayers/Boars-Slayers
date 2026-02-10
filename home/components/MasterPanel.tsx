@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, UserProfile, ClanRole } from '../lib/supabase';
-import { Check, X, Search, Loader2, UserX, Settings, Crown } from 'lucide-react';
+import { Check, X, Search, Loader2, Settings, Crown } from 'lucide-react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 
@@ -10,7 +10,7 @@ import { TournamentManager } from './TournamentManager';
 import { UserBadgeManager } from './UserBadgeManager';
 import { ShowmatchManager } from './ShowmatchManager';
 import { UserCreator } from './UserCreator';
-import { Award, UserPlus, ShieldCheck } from 'lucide-react';
+import { Award, UserPlus } from 'lucide-react';
 
 export const MasterPanel: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'users' | 'badges' | 'roles' | 'tournaments' | 'showmatches'>('users');
@@ -115,12 +115,7 @@ export const MasterPanel: React.FC = () => {
         }
     };
 
-    const handleDeleteUser = async (userId: string) => {
-        if (!confirm('¿Estás seguro de querer eliminar a este usuario?')) return;
-        const { error } = await supabase.from('profiles').delete().eq('id', userId);
-        if (!error) setUsers(users.filter(u => u.id !== userId));
-        else alert('Error al eliminar usuario');
-    };
+
 
     const [fullEditingUser, setFullEditingUser] = useState<UserProfile | null>(null);
 

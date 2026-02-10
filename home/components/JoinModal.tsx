@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
-import { X, ExternalLink, Shield, Send, CheckCircle2, User } from 'lucide-react';
+import { X, ExternalLink, Shield, CheckCircle2 } from 'lucide-react';
 import { syncPlayerStats } from '../lib/aoe';
 
 interface JoinModalProps {
@@ -16,7 +16,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
     const [aoeUrl, setAoeUrl] = useState(profile?.aoe_insights_url || '');
     const [aoeCompanionId, setAoeCompanionId] = useState(profile?.aoe_companion_id || '');
     const [email, setEmail] = useState(profile?.contact_email || user?.email || '');
-    const [phone, setPhone] = useState(profile?.phone_number || '');
+
     const [reason, setReason] = useState(profile?.reason || '');
     const [accepted, setAccepted] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -46,7 +46,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ user, profile, onClose, on
                     aoe_profile_id: extractedProfileId,
                     aoe_companion_id: aoeCompanionId,
                     contact_email: email,
-                    phone_number: phone,
+
                     reason: reason,
                     accepted_rules: true,
                     role: 'candidate'

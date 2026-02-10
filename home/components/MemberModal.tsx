@@ -34,7 +34,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onVie
         const loadStats = async () => {
             if (member.steamId) {
                 setLoadingStats(true);
-                const data = await fetchPlayerStats(member.steamId);
+                const data = await fetchPlayerStats(member.steamId, member.aoeCompanionId || '');
                 setStats(data);
                 setLoadingStats(false);
             }

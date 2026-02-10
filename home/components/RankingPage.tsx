@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { syncPlayerStats, PlayerStats } from '../lib/aoe';
@@ -39,9 +39,9 @@ export function RankingPage() {
                 return;
             }
 
-            const validProfiles = profiles || [];
+            const validProfiles = (profiles || []) as any[];
 
-            const membersList: RankedMember[] = validProfiles.map(p => {
+            const membersList: RankedMember[] = validProfiles.map((p: any) => {
                 return {
                     id: p.id,
                     username: p.username,

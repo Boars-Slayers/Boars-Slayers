@@ -1,15 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, UserProfile } from '../lib/supabase';
-import { ExternalLink, MessageSquare, ArrowLeft, Loader2, Award, Swords, TrendingUp, Trophy, RefreshCw, AlertCircle, Terminal, ShieldCheck } from 'lucide-react';
+import { ExternalLink, MessageSquare, Loader2, Award, Swords, TrendingUp, Trophy, RefreshCw, AlertCircle, Terminal, ShieldCheck } from 'lucide-react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
-import { fetchPlayerStats, PlayerStats, syncPlayerStats } from '../lib/aoe';
+import { syncPlayerStats, PlayerStats } from '../lib/aoe';
 import { useAuth } from '../AuthContext';
-import { Moment } from '../types';
-import { MomentCard } from './Moments/MomentCard';
-import { UploadMomentModal } from './Moments/UploadMomentModal';
-import { ImageIcon } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
     const { username } = useParams<{ username: string }>();
@@ -19,9 +15,7 @@ export const ProfilePage: React.FC = () => {
     const [syncing, setSyncing] = useState(false);
     const [showDebug, setShowDebug] = useState(false);
     const { user: currentUser, profile: currentUserProfile } = useAuth();
-    const [moments, setMoments] = useState<Moment[]>([]);
-    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-    const [userBadges, setUserBadges] = useState<{ id: string, image_url: string, description: string }[]>([]);
+
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -59,8 +53,7 @@ export const ProfilePage: React.FC = () => {
                     handleRefreshStats(data.id, data.steam_id, data.aoe_companion_id);
                 }
 
-                fetchMoments(data.id);
-                setUserBadges(formattedProfile.badges);
+
             }
             setLoading(false);
         };
@@ -85,10 +78,7 @@ export const ProfilePage: React.FC = () => {
         }
     };
 
-    const fetchMoments = async (userId: string) => {
-        const { data } = await supabase.from('moments').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-        setMoments(data || []);
-    };
+
 
     if (loading) return <div className="min-h-screen bg-stone-950 flex items-center justify-center"><Loader2 size={48} className="text-gold-500 animate-spin" /></div>;
     if (!profile) return <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center text-white"><h1 className="text-2xl font-serif mb-4">Guerrero No Encontrado</h1><Link to="/" className="text-gold-500">Volver</Link></div>;
