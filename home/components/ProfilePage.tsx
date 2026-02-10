@@ -1,20 +1,27 @@
 import { useEffect, useState, FC } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, UserProfile } from '../lib/supabase';
-import { ExternalLink, MessageSquare, Loader2, Award, Swords, TrendingUp, Trophy, RefreshCw, AlertCircle, Terminal, ShieldCheck } from 'lucide-react';
+import { ExternalLink, MessageSquare, Loader2, Award, Swords, TrendingUp, Trophy, RefreshCw, AlertCircle, Terminal, ShieldCheck, ImageIcon, Plus } from 'lucide-react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { syncPlayerStats, PlayerStats } from '../lib/aoe';
 import { useAuth } from '../AuthContext';
+import { Moment } from '../types';
+import { MomentCard } from './Moments/MomentCard';
+import { UploadMomentModal } from './Moments/UploadMomentModal';
+import { ProfileEditor } from './ProfileEditor';
 
 export const ProfilePage: FC = () => {
     const { username } = useParams<{ username: string }>();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [stats, setStats] = useState<PlayerStats | null>(null);
+    const [moments, setMoments] = useState<Moment[]>([]);
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
     const [showDebug, setShowDebug] = useState(false);
-    const { user: currentUser, profile: currentUserProfile } = useAuth();
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const { user: currentUser, profile: currentUserProfile, refreshProfile } = useAuth();
 
 
     useEffect(() => {
@@ -41,11 +48,50 @@ export const ProfilePage: FC = () => {
                 if (data.aoe_companion_id) {
                     handleRefreshStats(data.id, data.steam_id, data.aoe_companion_id);
                 }
+
+                fetchMoments(data.id);
             }
             setLoading(false);
         };
         if (username) fetchProfile();
     }, [username]);
+
+    const fetchMoments = async (profileId: string) => {
+        try {
+            const { data: uploadedMoments } = await supabase
+                .from('moments')
+                .select('*')
+                .eq('user_id', profileId)
+                .order('created_at', { ascending: false });
+
+            const { data: taggedData } = await supabase
+                .from('moment_tags')
+                .select('moment_id')
+                .eq('user_id', profileId);
+
+            let allMoments = uploadedMoments || [];
+
+            if (taggedData && taggedData.length > 0) {
+                const momentIds = taggedData.map((t: any) => t.moment_id);
+                const { data: taggedMoments } = await supabase
+                    .from('moments')
+                    .select('*')
+                    .in('id', momentIds);
+
+                if (taggedMoments) {
+                    const combined = [...allMoments, ...taggedMoments];
+                    const uniqueMap = new Map();
+                    combined.forEach(m => uniqueMap.set(m.id, m));
+                    allMoments = Array.from(uniqueMap.values()).sort((a, b) =>
+                        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    );
+                }
+            }
+            setMoments(allMoments);
+        } catch (error) {
+            console.error('Error fetching moments:', error);
+        }
+    };
 
     const handleRefreshStats = async (pId?: string, sId?: string, cId?: string) => {
         const targetId = cId || profile?.aoe_companion_id;
@@ -81,9 +127,18 @@ export const ProfilePage: FC = () => {
                     <div className="flex flex-col md:flex-row items-center md:items-end gap-6 w-full">
                         <img src={profile.avatar_url} className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-stone-950 shadow-2xl bg-stone-800 object-cover" />
                         <div className="flex-1 text-center md:text-left mb-2">
-                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-2">
                                 <h1 className="text-3xl md:text-5xl font-serif font-black text-white">{profile.username}</h1>
                                 {profile.aoe_companion_id && <div className="bg-gold-600/20 text-gold-500 border border-gold-600/30 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest flex items-center gap-1"><ShieldCheck size={10} /> Verificado</div>}
+
+                                {currentUser?.id === profile.id && (
+                                    <button
+                                        onClick={() => setIsEditingProfile(true)}
+                                        className="bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border border-white/10 transition-all flex items-center gap-2"
+                                    >
+                                        Editar Perfil
+                                    </button>
+                                )}
                             </div>
                             <p className="text-stone-400 italic text-sm">{profile.bio || 'Sin historia...'}</p>
                         </div>
@@ -162,6 +217,35 @@ export const ProfilePage: FC = () => {
                         </h3>
                         <p className="text-stone-300 leading-relaxed whitespace-pre-wrap">{profile.reason || 'Sin historia registrada todavía.'}</p>
                     </div>
+
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-2xl font-serif font-bold text-white flex items-center gap-2">
+                                <ImageIcon className="text-gold-500" /> Momentos de Gloria
+                            </h3>
+                            {currentUser?.id === profile.id && (
+                                <button
+                                    onClick={() => setIsUploadModalOpen(true)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-gold-600 text-stone-950 rounded-lg font-bold text-xs hover:bg-gold-500 transition-colors shadow-lg"
+                                >
+                                    <Plus size={16} /> Subir Momento
+                                </button>
+                            )}
+                        </div>
+
+                        {moments.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {moments.map((moment: Moment) => (
+                                    <MomentCard key={moment.id} moment={moment} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-stone-900/30 border border-white/5 rounded-2xl p-12 text-center">
+                                <ImageIcon size={48} className="text-stone-700 mx-auto mb-4" />
+                                <p className="text-stone-500 italic">Este guerrero aún no ha inmortalizado sus batallas...</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="space-y-6">
@@ -176,15 +260,65 @@ export const ProfilePage: FC = () => {
                                 <span className="text-stone-500">Steam ID</span>
                                 <span className="text-white font-mono">{profile.steam_id || '---'}</span>
                             </div>
-                            {profile.aoe_insights_url && (
-                                <a href={profile.aoe_insights_url} target="_blank" className="w-full flex items-center justify-center gap-2 py-3 bg-stone-800 text-gold-400 rounded-xl font-bold text-xs mt-4 hover:bg-stone-700 transition-colors">
-                                    AOE Insights <ExternalLink size={14} />
+
+                            {profile.steam_id && (
+                                <a
+                                    href={`https://steamcommunity.com/profiles/${profile.steam_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-[#171a21] text-blue-400 rounded-xl font-bold text-xs mt-2 hover:bg-[#2a475e] transition-colors"
+                                >
+                                    Steam Profile <ExternalLink size={14} />
+                                </a>
+                            )}
+
+                            {/* Botón de AoE Insights más visible */}
+                            {profile.aoe_insights_url ? (
+                                <a
+                                    href={profile.aoe_insights_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full flex items-center justify-center gap-2 py-4 bg-gold-600/10 border border-gold-600/30 text-gold-500 rounded-xl font-black text-[10px] uppercase tracking-widest mt-4 hover:bg-gold-600/20 transition-all shadow-lg group"
+                                >
+                                    Ver Perfil AoE Insights <ExternalLink size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                </a>
+                            ) : profile.steam_id && (
+                                <a
+                                    href={`https://www.aoeinsights.com/user/${profile.steam_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full flex items-center justify-center gap-2 py-4 bg-stone-800 border border-white/5 text-stone-400 rounded-xl font-black text-[10px] uppercase tracking-widest mt-4 hover:bg-stone-700 transition-all"
+                                >
+                                    AoE Insights (Auto-link) <ExternalLink size={14} />
                                 </a>
                             )}
                         </div>
                     </div>
                 </div>
             </main>
+
+            {profile && isEditingProfile && (
+                <ProfileEditor
+                    profile={profile}
+                    onClose={() => setIsEditingProfile(false)}
+                    onUpdate={() => {
+                        setIsEditingProfile(false);
+                        refreshProfile();
+                        window.location.reload(); // Re-fetch all
+                    }}
+                />
+            )}
+
+            {profile && isUploadModalOpen && (
+                <UploadMomentModal
+                    isOpen={isUploadModalOpen}
+                    onClose={() => setIsUploadModalOpen(false)}
+                    onSuccess={() => {
+                        setIsUploadModalOpen(false);
+                        fetchMoments(profile.id);
+                    }}
+                />
+            )}
             <Footer />
         </div>
     );
