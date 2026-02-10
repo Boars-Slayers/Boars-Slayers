@@ -5,7 +5,8 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const PROJECT_URL = "https://github.com/jesus18112003/AoEDash";
+// URL de este proyecto para cumplir con el requisito de User-Agent de la API de AoE2 Companion
+const PROJECT_URL = "https://github.com/Boars-Slayers/Boars-Slayers";
 
 const pattern = /(.+?)\s\((\d+)\)\sRank\s#(\d+).*?(\d+)%\swinrate/;
 
@@ -19,6 +20,7 @@ const fetchNightbotStats = async (profileId: string, leaderboardId: number = 3) 
         if (!res.ok) return null;
 
         let text = await res.text();
+        // Limpiamos la respuesta de comillas y espacios especiales como en la lógica de referencia
         text = text.trim().replace(/\u00A0/g, " ").replace(/^"|"$/g, "");
 
         const match = text.match(pattern);
@@ -52,12 +54,10 @@ serve(async (req) => {
             });
         }
 
-        console.log(`Fetching Nightbot stats for STRICT Profile ID: ${profileId}`);
-
-        // Fetch 1v1 and TG concurrently using the exact ID provided
+        // Ejecutamos las tareas concurrentemente (asyncio gather)
         const [stats1v1, statsTG] = await Promise.all([
-            fetchNightbotStats(profileId, 3),
-            fetchNightbotStats(profileId, 4)
+            fetchNightbotStats(profileId, 3), // 1v1 RM
+            fetchNightbotStats(profileId, 4)  // Team RM
         ]);
 
         if (!stats1v1 && !statsTG) {
@@ -70,6 +70,7 @@ serve(async (req) => {
             });
         }
 
+        // Combinamos los datos para reflejarlos en los cuadros del perfil
         const combinedStats = {
             name: stats1v1?.name || statsTG?.name || "Unknown",
             elo1v1: stats1v1?.elo || null,
