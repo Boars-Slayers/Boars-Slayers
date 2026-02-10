@@ -34,20 +34,8 @@ export const ProfilePage: FC = () => {
                 };
                 setProfile(formattedProfile);
 
-                // CARGA INICIAL DESDE DB (Para que no se vea vacío mientras pedimos a la API)
-                if (data.elo_1v1 || data.rank_1v1 || data.win_rate_1v1) {
-                    setStats({
-                        steamId: data.steam_id,
-                        name: data.username,
-                        elo1v1: data.elo_1v1,
-                        eloTG: data.elo_tg,
-                        winRate1v1: data.win_rate_1v1,
-                        gamesPlayed: data.games_played || 0,
-                        streak: data.streak || 0,
-                        rank: data.rank_1v1,
-                        debug: null
-                    });
-                }
+                // NO CARGAMOS DESDE DB. Ignoramos lo que haya en el perfil para forzar el "en vivo".
+                setStats(null);
 
                 // SIEMPRE REFRESCAR EN VIVO SI TENEMOS ID
                 if (data.aoe_companion_id) {
