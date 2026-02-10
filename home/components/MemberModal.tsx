@@ -32,9 +32,9 @@ export const MemberModal: FC<MemberModalProps> = ({ member, onClose, onViewProfi
         document.body.style.overflow = 'hidden';
 
         const loadStats = async () => {
-            if (member.steamId) {
+            if (member.aoeCompanionId) {
                 setLoadingStats(true);
-                const data = await fetchPlayerStats(member.steamId, member.aoeCompanionId || '');
+                const data = await fetchPlayerStats(member.steamId || '', member.aoeCompanionId);
                 setStats(data);
                 setLoadingStats(false);
             }

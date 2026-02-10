@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, FC } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { syncPlayerStats, PlayerStats } from '../lib/aoe';
@@ -212,6 +212,6 @@ export function RankingPage() {
     );
 }
 
-const Loader2 = ({ size, className }: { size: number, className: string }) => (
+const Loader2: FC<{ size: number, className: string }> = ({ size, className }) => (
     <RefreshCw size={size} className={`animate-spin ${className}`} />
 );

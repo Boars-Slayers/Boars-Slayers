@@ -144,7 +144,7 @@ export const ProfilePage: FC = () => {
                                     className="ml-auto flex items-center gap-2 px-4 py-2 bg-stone-900 border border-gold-600/30 text-gold-500 rounded-lg hover:bg-gold-600/10 transition-all text-[10px] font-black uppercase tracking-widest disabled:opacity-30 group"
                                 >
                                     <RefreshCw size={14} className={syncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-700'} />
-                                    {syncing ? 'Sincronizando...' : 'Actualizar Estadísticas'}
+                                    {syncing ? 'Sincronizando...' : 'Actualizar'}
                                 </button>
                             )}
                         </div>
@@ -203,10 +203,10 @@ export const ProfilePage: FC = () => {
     );
 };
 
-const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
-    <div className="bg-stone-900 border border-stone-800 p-6 rounded-xl text-center flex flex-col items-center gap-2 hover:border-gold-600/30 transition-all shadow-lg">
-        {icon}
-        <p className="text-[10px] uppercase tracking-widest text-stone-500 font-bold">{label}</p>
-        <p className="text-2xl font-serif font-black text-white">{value}</p>
+const StatCard: FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
+    <div className="bg-stone-900 border border-stone-800 p-6 rounded-xl text-center flex flex-col items-center gap-2 hover:border-gold-600/30 transition-all shadow-lg w-full">
+        <div className="text-2xl">{icon}</div>
+        <p className="text-[10px] uppercase tracking-widest text-stone-500 font-bold whitespace-nowrap">{label}</p>
+        <p className="text-xl md:text-2xl font-serif font-black text-white">{value}</p>
     </div>
 );
