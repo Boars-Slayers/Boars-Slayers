@@ -123,25 +123,23 @@ export const fetchMatchHistory = async (steamId: string, _c: number, aoeCompanio
     if (!aoeCompanionId) return [];
 
     try {
-        const supabaseUrl = (supabase as any).supabaseUrl;
-        const supabaseKey = (supabase as any).supabaseKey;
+        // Intentamos llamar DIRECTAMENTE a la API de AoE2 Companion
+        // Esta API suele permitir peticiones desde navegadores (CORS friendly)
+        const response = await fetch(`https://data.aoe2companion.com/api/v2/matches?profile_id=${aoeCompanionId}&limit=10`);
 
-        const response = await fetch(`${supabaseUrl}/functions/v1/proxy-match-history`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': supabaseKey,
-                'Authorization': `Bearer ${supabaseKey}`
-            },
-            body: JSON.stringify({ profileId: aoeCompanionId, action: 'matches' })
-        });
-
-        if (!response.ok) return [];
+        if (!response.ok) {
+            console.error("❌ La API directa de AoE2 falló o bloqueó el acceso.");
+            return [];
+        }
 
         const data = await response.json();
+
+        // La API de v2 devuelve { matches: [...] }
         return data.matches || [];
+
     } catch (error) {
-        console.error("Error fetching match history:", error);
+        console.warn("⚠️ Error en llamada directa, intentando vía Proxy de emergencia...");
+        // Si falla por CORS o red, el error se captura aquí.
         return [];
     }
 };
