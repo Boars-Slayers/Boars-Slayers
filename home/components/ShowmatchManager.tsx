@@ -22,7 +22,11 @@ export const ShowmatchManager: React.FC = () => {
         scheduled_time: getLocalTimeISO(),
         stream_url: '',
         twitch_url: '',
-        youtube_url: ''
+        twitch_channel: '',
+        twitch_icon: '',
+        youtube_url: '',
+        youtube_channel: '',
+        youtube_icon: ''
     });
 
     useEffect(() => {
@@ -73,7 +77,11 @@ export const ShowmatchManager: React.FC = () => {
             scheduled_time: getLocalTimeISO(),
             stream_url: '',
             twitch_url: '',
-            youtube_url: ''
+            twitch_channel: '',
+            twitch_icon: '',
+            youtube_url: '',
+            youtube_channel: '',
+            youtube_icon: ''
         });
         fetchData();
     };
@@ -197,25 +205,57 @@ export const ShowmatchManager: React.FC = () => {
                                 className="w-full bg-stone-900 border border-stone-800 rounded-lg p-2.5 text-white outline-none focus:border-gold-500"
                             />
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-2">Twitch URL</label>
+                        <div className="space-y-4">
+                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-2">Twitch Info</label>
                             <input
                                 type="url"
                                 value={newMatch.twitch_url || ''}
                                 onChange={e => setNewMatch({ ...newMatch, twitch_url: e.target.value })}
                                 className="w-full bg-stone-900 border border-stone-800 rounded-lg p-2.5 text-white outline-none focus:border-gold-500"
-                                placeholder="https://twitch.tv/..."
+                                placeholder="URL de Twitch (ej: https://twitch.tv/canalserie)"
                             />
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                <input
+                                    type="text"
+                                    value={newMatch.twitch_channel || ''}
+                                    onChange={e => setNewMatch({ ...newMatch, twitch_channel: e.target.value })}
+                                    className="bg-stone-900 border border-stone-800 rounded-lg p-2 text-xs text-white"
+                                    placeholder="Nombre del Canal (opcional)"
+                                />
+                                <input
+                                    type="url"
+                                    value={newMatch.twitch_icon || ''}
+                                    onChange={e => setNewMatch({ ...newMatch, twitch_icon: e.target.value })}
+                                    className="bg-stone-900 border border-stone-800 rounded-lg p-2 text-xs text-white"
+                                    placeholder="URL del Icono (opcional)"
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-2">YouTube URL</label>
+                        <div className="space-y-4">
+                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-2">YouTube Info</label>
                             <input
                                 type="url"
                                 value={newMatch.youtube_url || ''}
                                 onChange={e => setNewMatch({ ...newMatch, youtube_url: e.target.value })}
                                 className="w-full bg-stone-900 border border-stone-800 rounded-lg p-2.5 text-white outline-none focus:border-gold-500"
-                                placeholder="https://youtube.com/watch?v=..."
+                                placeholder="URL de YouTube (ej: https://youtube.com/@Canal)"
                             />
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                <input
+                                    type="text"
+                                    value={newMatch.youtube_channel || ''}
+                                    onChange={e => setNewMatch({ ...newMatch, youtube_channel: e.target.value })}
+                                    className="bg-stone-900 border border-stone-800 rounded-lg p-2 text-xs text-white"
+                                    placeholder="Nombre del Canal (opcional)"
+                                />
+                                <input
+                                    type="url"
+                                    value={newMatch.youtube_icon || ''}
+                                    onChange={e => setNewMatch({ ...newMatch, youtube_icon: e.target.value })}
+                                    className="bg-stone-900 border border-stone-800 rounded-lg p-2 text-xs text-white"
+                                    placeholder="URL del Icono (opcional)"
+                                />
+                            </div>
                         </div>
                     </div>
                     <div className="flex gap-3 justify-end pt-4">

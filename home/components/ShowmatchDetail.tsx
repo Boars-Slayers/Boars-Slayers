@@ -79,6 +79,24 @@ export const ShowmatchDetail: React.FC = () => {
     const [timeLeft, setTimeLeft] = useState('');
     const [selectedBadge, setSelectedBadge] = useState<{ image_url: string, description: string } | null>(null);
 
+    // Helpers to extract channel names from URLs
+    const getTwitchChannel = (url: string) => {
+        try {
+            const path = new URL(url).pathname;
+            return path.split('/').filter(Boolean)[0] || 'Canal';
+        } catch { return 'Twitch'; }
+    };
+
+    const getYoutubeChannel = (url: string) => {
+        try {
+            const urlObj = new URL(url);
+            if (urlObj.hostname.includes('youtube.com') && urlObj.pathname.startsWith('/@')) {
+                return urlObj.pathname.slice(1);
+            }
+            return 'Boars Slayers TV';
+        } catch { return 'YouTube'; }
+    };
+
     useEffect(() => {
         const fetchMatch = async () => {
             if (!id) return;
@@ -181,11 +199,11 @@ export const ShowmatchDetail: React.FC = () => {
 
                 {/* Bottom Embers Resplandor */}
                 <div className="absolute inset-x-0 bottom-0 h-32 bg-[#ff6600]/10 blur-3xl"></div>
+            </div>
 
-                {/* Embedded Particles - High Z-Index and NO parent background */}
-                <div className="absolute inset-0 z-[50] pointer-events-none">
-                    <FireParticles />
-                </div>
+            {/* Fire Particles - Moved here to be above background but behind everything else */}
+            <div className="fixed inset-0 z-[5] pointer-events-none">
+                <FireParticles />
             </div>
 
             <main className="relative z-10 h-full flex flex-col pt-16 md:pt-20">
@@ -367,13 +385,19 @@ export const ShowmatchDetail: React.FC = () => {
                                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-[radial-gradient(circle,rgba(168,85,247,0.4)_0%,transparent_70%)]"></div>
                                     <div className="absolute inset-0 border-2 border-purple-300/20 rounded-xl group-hover:border-purple-400/50 transition-colors"></div>
                                     <div className="absolute inset-0 flex items-center px-6 gap-4">
-                                        <div className="relative">
+                                        <div className="relative shrink-0">
                                             <div className="absolute inset-0 blur-lg bg-white/20 animate-pulse"></div>
-                                            <Twitch size={36} className="text-white relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+                                            {match.twitch_icon ? (
+                                                <img src={match.twitch_icon} alt="" className="w-10 h-10 rounded-lg relative z-10 border border-white/20 object-cover" />
+                                            ) : (
+                                                <Twitch size={36} className="text-white relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+                                            )}
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-200">En Directo</span>
-                                            <span className="font-cinzel text-lg font-black text-white tracking-widest drop-shadow-md">TWITCH TV</span>
+                                        <div className="flex flex-col overflow-hidden">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-200 truncate">En Directo</span>
+                                            <span className="font-cinzel text-md font-black text-white tracking-widest drop-shadow-md truncate">
+                                                {match.twitch_channel || getTwitchChannel(match.twitch_url)}
+                                            </span>
                                         </div>
                                     </div>
                                     <div className="absolute top-0 left-[-100%] w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:animate-[shimmer_2s_infinite]"></div>
@@ -392,13 +416,19 @@ export const ShowmatchDetail: React.FC = () => {
                                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-[radial-gradient(circle,rgba(239,68,68,0.4)_0%,transparent_70%)]"></div>
                                     <div className="absolute inset-0 border-2 border-red-300/20 rounded-xl group-hover:border-red-400/50 transition-colors"></div>
                                     <div className="absolute inset-0 flex items-center px-6 gap-4">
-                                        <div className="relative">
+                                        <div className="relative shrink-0">
                                             <div className="absolute inset-0 blur-lg bg-white/20 animate-pulse"></div>
-                                            <Youtube size={36} className="text-white relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+                                            {match.youtube_icon ? (
+                                                <img src={match.youtube_icon} alt="" className="w-10 h-10 rounded-lg relative z-10 border border-white/20 object-cover" />
+                                            ) : (
+                                                <Youtube size={36} className="text-white relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+                                            )}
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-200">En Directo</span>
-                                            <span className="font-cinzel text-lg font-black text-white tracking-widest drop-shadow-md">YOUTUBE</span>
+                                        <div className="flex flex-col overflow-hidden">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-200 truncate">En Directo</span>
+                                            <span className="font-cinzel text-md font-black text-white tracking-widest drop-shadow-md truncate">
+                                                {match.youtube_channel || getYoutubeChannel(match.youtube_url)}
+                                            </span>
                                         </div>
                                     </div>
                                     <div className="absolute top-0 left-[-100%] w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:animate-[shimmer_2s_infinite]"></div>

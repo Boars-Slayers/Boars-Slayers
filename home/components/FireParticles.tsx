@@ -22,10 +22,10 @@ export const FireParticles = () => {
                         value: "transparent",
                     },
                 },
-                fpsLimit: 60,
+                fpsLimit: 120,
                 particles: {
                     color: {
-                        value: ["#ffffff", "#fff0a0", "#ffd700", "#ff8c00", "#ff4500", "#ff0000"],
+                        value: ["#fdcf58", "#757676", "#f27d0c", "#800909", "#f07f13"],
                     },
                     move: {
                         direction: "top",
@@ -34,20 +34,18 @@ export const FireParticles = () => {
                             default: "out",
                         },
                         random: true,
-                        speed: { min: 2, max: 5 }, // Slightly slower for more "organic" feel
+                        speed: { min: 3, max: 7 },
                         straight: false,
-                        // Using 'vibrate' or just random direction for dance, as wobble might be version-locked
-                        vibrate: true,
                     },
                     number: {
                         density: {
                             enable: true,
                             area: 800,
                         },
-                        value: 30, // Even lower count for better focus on each "lick"
+                        value: 80,
                     },
                     opacity: {
-                        value: { min: 0, max: 0.7 },
+                        value: { min: 0.1, max: 0.6 },
                         animation: {
                             enable: true,
                             speed: 1,
@@ -56,16 +54,10 @@ export const FireParticles = () => {
                         }
                     },
                     shape: {
-                        type: "path",
-                        options: {
-                            path: {
-                                // Custom SVG Path for a "Flame Lick / Drop" shape
-                                d: "M20 40 Q25 30 20 20 Q15 10 20 0 Q25 10 30 20 Q35 30 20 40",
-                            }
-                        }
+                        type: "circle",
                     },
                     size: {
-                        value: { min: 2, max: 10 },
+                        value: { min: 1, max: 5 },
                         animation: {
                             enable: true,
                             speed: 4,
@@ -74,18 +66,22 @@ export const FireParticles = () => {
                             destroy: "max"
                         }
                     },
-                    rotate: {
-                        value: { min: -15, max: 15 },
-                        animation: {
-                            enable: true,
-                            speed: 5,
-                            sync: false
+                    life: {
+                        duration: {
+                            sync: false,
+                            value: 3
                         },
+                        count: 0
                     },
+                    wobble: {
+                        enable: true,
+                        distance: 10,
+                        speed: 10
+                    }
                 },
                 detectRetina: true,
             }}
-            className="pointer-events-none w-full h-full"
+            className="absolute inset-0 pointer-events-none"
         />
     );
 };
