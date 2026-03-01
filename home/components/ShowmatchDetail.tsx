@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Showmatch } from '../types';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
-import { Swords, ArrowLeft, Twitch, X as CloseIcon } from 'lucide-react';
+import { Swords, ArrowLeft, Twitch, Youtube, X as CloseIcon } from 'lucide-react';
 import { FireParticles } from './FireParticles';
 
 // Custom CSS for animations and high-fidelity effects
@@ -32,6 +32,11 @@ const animationStyles = `
   0% { opacity: 0.4; }
   50% { opacity: 0.8; }
   100% { opacity: 0.4; }
+}
+
+@keyframes shimmer {
+  from { left: -100%; }
+  to { left: 100%; }
 }
 
 .animate-breathing {
@@ -348,30 +353,55 @@ export const ShowmatchDetail: React.FC = () => {
                             <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[#5c3a21]/30"></div>
                         </div>
 
-                        {/* Metallic Twitch Button underneath */}
-                        <div className="flex justify-center mt-4 md:mt-8">
-                            {match.stream_url && (
+                        {/* Transmission Boxes - Modern Redesign */}
+                        <div className="flex flex-wrap justify-center gap-6 mt-4 md:mt-12">
+                            {match.twitch_url && (
                                 <a
-                                    href={match.stream_url}
+                                    href={match.twitch_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="relative inline-flex items-center justify-center transition-all group overflow-hidden hover:scale-105 active:scale-95"
-                                    style={{
-                                        width: '450px',
-                                        height: '110px',
-                                        background: 'url("/vertransmision.png") no-repeat center center',
-                                        backgroundSize: '100% 100%',
-                                    }}
+                                    className="group relative w-full md:w-64 h-24 overflow-hidden rounded-xl transition-all hover:scale-105 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
                                 >
-                                    <div className="flex items-center gap-4 relative z-10 pointer-events-none translate-y-[-2px]">
-                                        <Twitch size={32} className="drop-shadow-[0_0_15px_#fff] text-white" />
-                                        <span className="font-cinzel font-black text-white text-lg md:text-xl uppercase tracking-[0.2em] drop-shadow-[0_2px_15px_rgba(0,0,0,0.8)]">
-                                            VER TRANSMISIÓN
-                                        </span>
+                                    <div className="absolute inset-0 bg-[#6441a5] transition-transform group-hover:scale-110 duration-500"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-400/30 via-transparent to-black/60"></div>
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-[radial-gradient(circle,rgba(168,85,247,0.4)_0%,transparent_70%)]"></div>
+                                    <div className="absolute inset-0 border-2 border-purple-300/20 rounded-xl group-hover:border-purple-400/50 transition-colors"></div>
+                                    <div className="absolute inset-0 flex items-center px-6 gap-4">
+                                        <div className="relative">
+                                            <div className="absolute inset-0 blur-lg bg-white/20 animate-pulse"></div>
+                                            <Twitch size={36} className="text-white relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-200">En Directo</span>
+                                            <span className="font-cinzel text-lg font-black text-white tracking-widest drop-shadow-md">TWITCH TV</span>
+                                        </div>
                                     </div>
+                                    <div className="absolute top-0 left-[-100%] w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:animate-[shimmer_2s_infinite]"></div>
+                                </a>
+                            )}
 
-                                    {/* Subtle Ambient Resplandor - Radial */}
-                                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(168,85,247,0.3)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                            {match.youtube_url && (
+                                <a
+                                    href={match.youtube_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group relative w-full md:w-64 h-24 overflow-hidden rounded-xl transition-all hover:scale-105 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+                                >
+                                    <div className="absolute inset-0 bg-[#cd201f] transition-transform group-hover:scale-110 duration-500"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-red-400/30 via-transparent to-black/60"></div>
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-[radial-gradient(circle,rgba(239,68,68,0.4)_0%,transparent_70%)]"></div>
+                                    <div className="absolute inset-0 border-2 border-red-300/20 rounded-xl group-hover:border-red-400/50 transition-colors"></div>
+                                    <div className="absolute inset-0 flex items-center px-6 gap-4">
+                                        <div className="relative">
+                                            <div className="absolute inset-0 blur-lg bg-white/20 animate-pulse"></div>
+                                            <Youtube size={36} className="text-white relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-200">En Directo</span>
+                                            <span className="font-cinzel text-lg font-black text-white tracking-widest drop-shadow-md">YOUTUBE</span>
+                                        </div>
+                                    </div>
+                                    <div className="absolute top-0 left-[-100%] w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:animate-[shimmer_2s_infinite]"></div>
                                 </a>
                             )}
                         </div>

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
 import { Showmatch } from '../types';
-import { Plus, Swords, Calendar, Trash2, Play, CheckCircle } from 'lucide-react';
+import { Plus, Swords, Calendar, Trash2, Play, CheckCircle, Edit2 } from 'lucide-react';
 
 export const ShowmatchManager: React.FC = () => {
     const [matches, setMatches] = useState<Showmatch[]>([]);
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [isCreating, setIsCreating] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
 
     const getLocalTimeISO = () => {
         const now = new Date();
@@ -19,7 +20,9 @@ export const ShowmatchManager: React.FC = () => {
         description: '',
         status: 'scheduled',
         scheduled_time: getLocalTimeISO(),
-        stream_url: ''
+        stream_url: '',
+        twitch_url: '',
+        youtube_url: ''
     });
 
     useEffect(() => {
@@ -45,18 +48,41 @@ export const ShowmatchManager: React.FC = () => {
             scheduled_time: new Date(newMatch.scheduled_time || '').toISOString()
         };
 
-        const { error } = await supabase.from('showmatches').insert(dataToSave);
-        if (!error) {
+        let res;
+        if (editingId) {
+            res = await supabase.from('showmatches').update(dataToSave).eq('id', editingId);
+        } else {
+            res = await supabase.from('showmatches').insert(dataToSave);
+        }
+
+        if (!res.error) {
             setIsCreating(false);
+            setEditingId(null);
             setNewMatch({
                 title: '',
                 description: '',
                 status: 'scheduled',
                 scheduled_time: getLocalTimeISO(),
-                stream_url: ''
+                stream_url: '',
+                twitch_url: '',
+                youtube_url: ''
             });
             fetchData();
         }
+    };
+
+    const handleEdit = (match: Showmatch) => {
+        // Formato para input datetime-local: YYYY-MM-DDTHH:MM
+        const date = new Date(match.scheduled_time);
+        const offset = date.getTimezoneOffset() * 60000;
+        const localISO = new Date(date.getTime() - offset).toISOString().slice(0, 16);
+
+        setNewMatch({
+            ...match,
+            scheduled_time: localISO
+        });
+        setEditingId(match.id);
+        setIsCreating(true);
     };
 
     const handleDelete = async (id: string) => {
@@ -165,19 +191,31 @@ export const ShowmatchManager: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-2">Link Transmisión</label>
+                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-2">Twitch URL</label>
                             <input
                                 type="url"
-                                value={newMatch.stream_url || ''}
-                                onChange={e => setNewMatch({ ...newMatch, stream_url: e.target.value })}
+                                value={newMatch.twitch_url || ''}
+                                onChange={e => setNewMatch({ ...newMatch, twitch_url: e.target.value })}
                                 className="w-full bg-stone-900 border border-stone-800 rounded-lg p-2.5 text-white outline-none focus:border-gold-500"
                                 placeholder="https://twitch.tv/..."
                             />
                         </div>
+                        <div>
+                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-2">YouTube URL</label>
+                            <input
+                                type="url"
+                                value={newMatch.youtube_url || ''}
+                                onChange={e => setNewMatch({ ...newMatch, youtube_url: e.target.value })}
+                                className="w-full bg-stone-900 border border-stone-800 rounded-lg p-2.5 text-white outline-none focus:border-gold-500"
+                                placeholder="https://youtube.com/watch?v=..."
+                            />
+                        </div>
                     </div>
                     <div className="flex gap-3 justify-end pt-4">
-                        <button onClick={() => setIsCreating(false)} className="px-4 py-2 text-stone-500 hover:text-white transition-colors">Cancelar</button>
-                        <button onClick={handleCreate} className="px-6 py-2 bg-gold-600 text-black font-bold rounded-lg hover:bg-gold-700 transition-colors">Crear Encuentro</button>
+                        <button onClick={() => { setIsCreating(false); setEditingId(null); }} className="px-4 py-2 text-stone-500 hover:text-white transition-colors">Cancelar</button>
+                        <button onClick={handleCreate} className="px-6 py-2 bg-gold-600 text-black font-bold rounded-lg hover:bg-gold-700 transition-colors">
+                            {editingId ? 'Guardar Cambios' : 'Crear Encuentro'}
+                        </button>
                     </div>
                 </div>
             )}
@@ -225,6 +263,7 @@ export const ShowmatchManager: React.FC = () => {
                                         ><CheckCircle size={18} /></button>
                                     </>
                                 )}
+                                <button onClick={() => handleEdit(match)} className="p-2 text-stone-500 hover:text-white rounded" title="Editar"><Edit2 size={18} /></button>
                                 <button onClick={() => handleDelete(match.id)} className="p-2 text-stone-600 hover:text-red-500 rounded"><Trash2 size={18} /></button>
                             </div>
                         </div>

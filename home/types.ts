@@ -88,6 +88,8 @@ export interface Showmatch {
   p2_name?: string;
   scheduled_time: string;
   stream_url?: string;
+  twitch_url?: string;
+  youtube_url?: string;
   status: 'scheduled' | 'live' | 'completed' | 'cancelled';
   winner_id?: string;
   result_score?: string;
