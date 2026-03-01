@@ -43,15 +43,11 @@ export const FireParticles = () => {
                             size: 0,
                             speed: 3
                         },
-                        repulse: {
-                            distance: 200,
-                            duration: 0.4,
-                        },
                     },
                 },
                 particles: {
                     color: {
-                        value: ["#ff5e00", "#ff8c00", "#ff0000"],
+                        value: ["#ffcc00", "#ff6600", "#ff3300", "#ff0000"],
                     },
                     links: {
                         enable: false,
@@ -63,7 +59,7 @@ export const FireParticles = () => {
                             default: "out",
                         },
                         random: true,
-                        speed: 2,
+                        speed: { min: 1, max: 4 },
                         straight: false,
                     },
                     number: {
@@ -71,7 +67,7 @@ export const FireParticles = () => {
                             enable: true,
                             area: 800,
                         },
-                        value: 80,
+                        value: 100,
                     },
                     opacity: {
                         value: { min: 0.1, max: 0.8 },
@@ -85,17 +81,22 @@ export const FireParticles = () => {
                         type: "circle",
                     },
                     size: {
-                        value: { min: 1, max: 4 },
+                        value: { min: 1, max: 6 },
                         animation: {
                             enable: true,
-                            speed: 2,
+                            speed: 3,
                             sync: false
                         }
+                    },
+                    shadow: {
+                        blur: 15,
+                        color: "#ff3300",
+                        enable: true,
                     },
                 },
                 detectRetina: true,
             }}
-            className="absolute inset-0 z-0 pointer-events-none"
+            className="absolute inset-0 z-10 pointer-events-none"
         />
     );
 };

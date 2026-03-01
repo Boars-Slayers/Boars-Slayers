@@ -7,18 +7,26 @@ import { Footer } from './Footer';
 import { Swords, ArrowLeft, Twitch, X as CloseIcon } from 'lucide-react';
 import { FireParticles } from './FireParticles';
 
-// Custom CSS for animations
+// Custom CSS for animations and high-fidelity effects
 const animationStyles = `
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
 @keyframes breathing {
-  0% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.05); opacity: 1; }
-  100% { transform: scale(1); opacity: 0.8; }
+  0% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
+  50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 50px rgba(255, 215, 0, 0.5); }
+  100% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
 }
 
 @keyframes float {
   0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-15px); }
   100% { transform: translateY(0px); }
+}
+
+@keyframes pulse-glow {
+  0% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.4; }
 }
 
 .animate-breathing {
@@ -27,6 +35,18 @@ const animationStyles = `
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
+}
+
+.font-cinzel {
+  font-family: 'Cinzel', serif;
+}
+
+.font-crimson {
+  font-family: 'Crimson Text', serif;
+}
+
+.parchment-border {
+  border-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0H100V100H0V0Z' fill='none'/%3E%3Cpath d='M5 5V95M95 5V95M5 5H95M5 95H95' stroke='%235c3a21' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M2 2L8 8M92 2L98 8M2 92L8 98M92 92L98 98' stroke='%238b6b4b' stroke-width='2'/%3E%3C/svg%3E") 30 stretch;
 }
 `;
 
@@ -129,13 +149,16 @@ export const ShowmatchDetail: React.FC = () => {
                 <img
                     src="/showmatchfondo2.webp"
                     alt="War Background"
-                    className="w-full h-full object-cover opacity-90 scale-100"
+                    className="w-full h-full object-cover opacity-100 scale-105"
                 />
 
-                {/* Fire Overlay Gradients */}
-                <div className="absolute inset-x-0 bottom-0 h-[60vh] bg-gradient-to-t from-[#ff4500]/15 via-[#ff0000]/5 to-transparent mix-blend-screen"></div>
-                <div className="absolute inset-0 bg-stone-950/20"></div> {/* General darkening */}
-                <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-stone-950/40"></div> {/* Vignette */}
+                {/* Fire Overlay Gradients - Enhanced for Cinematic Depth */}
+                <div className="absolute inset-x-0 bottom-0 h-[70vh] bg-gradient-to-t from-[#ff4500]/30 via-[#ff0000]/10 to-transparent mix-blend-screen"></div>
+                <div className="absolute inset-0 bg-stone-950/30"></div> {/* General darkening */}
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-950/90 via-transparent to-stone-950/60"></div> {/* Stronger Vignette */}
+
+                {/* Bottom Embers Resplandor */}
+                <div className="absolute inset-x-0 bottom-0 h-32 bg-[#ff6600]/10 blur-3xl"></div>
 
                 {/* Embedded Particles */}
                 <div className="absolute inset-0 z-10">
@@ -162,13 +185,13 @@ export const ShowmatchDetail: React.FC = () => {
                             </div>
                         </div>
 
-                        <h1 className="text-2xl md:text-5xl font-serif font-black text-white mb-1 uppercase tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+                        <h1 className="text-3xl md:text-6xl font-cinzel font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-stone-200 to-stone-400 mb-1 uppercase tracking-[0.1em] drop-shadow-[0_4px_15px_rgba(0,0,0,1)]">
                             {match.title}
                         </h1>
 
                         {match.status === 'scheduled' && (
                             <div className="flex justify-center items-center gap-2 mb-2">
-                                <span className="text-xl md:text-3xl font-serif text-gold-300 tracking-[0.2em] uppercase drop-shadow-[0_2px_15px_rgba(255,215,0,0.6)]">
+                                <span className="text-2xl md:text-4xl font-cinzel text-transparent bg-clip-text bg-gradient-to-b from-[#ffd700] to-[#b8860b] tracking-[0.3em] uppercase drop-shadow-[0_0_20px_rgba(255,170,0,0.8)]">
                                     {timeLeft || '...'}
                                 </span>
                             </div>
@@ -190,7 +213,7 @@ export const ShowmatchDetail: React.FC = () => {
                                     <div className="absolute -inset-[14px] border-[2px] border-blue-400/50 rounded-full border-dashed opacity-50"></div>
                                 </div>
                                 {/* Inner Avatar */}
-                                <div className="absolute inset-3 rounded-full bg-stone-900 overflow-hidden flex items-center justify-center z-10 border-4 border-blue-300/80 shadow-[inset_0_0_20px_rgba(0,0,0,0.9)]">
+                                <div className="absolute inset-3 rounded-full bg-stone-900 overflow-hidden flex items-center justify-center z-10 border-[6px] border-blue-400/80 shadow-[inset_0_0_30px_#000,0_0_40px_rgba(0,191,255,0.4)]">
                                     {p1Avatar ? (
                                         <img src={p1Avatar} alt={p1Name} className="w-full h-full object-cover scale-110" />
                                     ) : (
@@ -199,7 +222,7 @@ export const ShowmatchDetail: React.FC = () => {
                                 </div>
                             </div>
 
-                            <h2 className="text-lg md:text-2xl font-serif font-black text-white uppercase tracking-widest text-center drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">
+                            <h2 className="text-xl md:text-3xl font-cinzel font-black text-white uppercase tracking-widest text-center drop-shadow-[0_5px_15px_rgba(0,0,0,1)]">
                                 {p1Name}
                             </h2>
 
@@ -222,9 +245,9 @@ export const ShowmatchDetail: React.FC = () => {
 
                             <div className="relative z-30 transform hover:scale-110 transition-transform duration-500 animate-breathing">
                                 {/* Intense glowing VS sign */}
-                                <div className="absolute inset-0 bg-gold-500 blur-3xl opacity-20 animate-pulse"></div>
-                                <div className="text-8xl md:text-[160px] font-serif font-black italic text-transparent bg-clip-text bg-gradient-to-b from-[#ffd700] via-[#ffaa00] to-[#b8860b] drop-shadow-[0_10px_30px_rgba(0,0,0,0.9)] leading-none select-none relative z-10"
-                                    style={{ WebkitTextStroke: '2px rgba(255, 255, 255, 0.4)' }}>
+                                <div className="absolute inset-0 bg-[#ffd700] blur-[100px] opacity-20 animate-pulse"></div>
+                                <div className="text-9xl md:text-[180px] font-cinzel font-black italic text-transparent bg-clip-text bg-gradient-to-b from-[#ffd700] via-[#ffaa00] to-[#b8860b] drop-shadow-[0_15px_40px_rgba(0,0,0,1)] leading-none select-none relative z-10"
+                                    style={{ WebkitTextStroke: '2.5px rgba(255, 255, 255, 0.5)' }}>
                                     VS
                                 </div>
                             </div>
@@ -242,7 +265,7 @@ export const ShowmatchDetail: React.FC = () => {
                                     <div className="absolute -inset-[14px] border-[2px] border-red-500/50 rounded-full border-dashed opacity-50"></div>
                                 </div>
                                 {/* Inner Avatar */}
-                                <div className="absolute inset-3 rounded-full bg-stone-900 overflow-hidden flex items-center justify-center z-10 border-4 border-red-400/80 shadow-[inset_0_0_20px_rgba(0,0,0,0.9)]">
+                                <div className="absolute inset-3 rounded-full bg-stone-900 overflow-hidden flex items-center justify-center z-10 border-[6px] border-red-500/80 shadow-[inset_0_0_30px_#000,0_0_40px_rgba(255,0,0,0.4)]">
                                     {p2Avatar ? (
                                         <img src={p2Avatar} alt={p2Name} className="w-full h-full object-cover scale-110" />
                                     ) : (
@@ -251,7 +274,7 @@ export const ShowmatchDetail: React.FC = () => {
                                 </div>
                             </div>
 
-                            <h2 className="text-lg md:text-2xl font-serif font-black text-white uppercase tracking-widest text-center drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">
+                            <h2 className="text-xl md:text-3xl font-cinzel font-black text-white uppercase tracking-widest text-center drop-shadow-[0_5px_15px_rgba(0,0,0,1)]">
                                 {p2Name}
                             </h2>
 
@@ -271,47 +294,68 @@ export const ShowmatchDetail: React.FC = () => {
                     </div>
 
                     {/* Bottom Info Section - Parchment Style */}
-                    <div className="max-w-3xl mx-auto w-full mt-auto relative z-20 pb-12">
-                        {/* Parchment background simulation using CSS textures */}
-                        <div className="bg-[#d4bca0] p-6 md:p-8 relative shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-4 border-[#8b6b4b]"
+                    <div className="max-w-3xl mx-auto w-full mt-auto relative z-20 pb-8 translate-y-4">
+                        {/* High-Fidelity Parchment with tattered edges and burnt border */}
+                        <div className="relative p-7 md:p-10 shadow-[0_30px_80px_rgba(0,0,0,0.9)] transform-gpu"
                             style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E")`,
-                                clipPath: 'polygon(2% 0%, 98% 1%, 100% 98%, 1% 99%)', // Tattered edges simulation
-                                boxShadow: 'inset 0 0 40px rgba(101,67,33,0.6)',
+                                background: '#dcc6ac',
+                                backgroundImage: `url("https://www.transparenttextures.com/patterns/paper-fibers.png")`,
+                                boxShadow: 'inset 0 0 60px rgba(101,67,33,0.7), 0 20px 50px rgba(0,0,0,0.8)',
+                                clipPath: 'polygon(1.5% 2%, 98.5% 1%, 99.5% 98%, 0.5% 99.5%, 2% 85%, 0% 50%, 2% 15%)',
+                                border: '1px solid #5c3a21',
                             }}>
 
-                            {/* Inner parchment dark border */}
-                            <div className="absolute inset-2 border-2 border-[#5c3a21] opacity-30 pointer-events-none" style={{ clipPath: 'polygon(1% 1%, 99% -1%, 98% 99%, 0% 100%)' }}></div>
+                            {/* Inner antique border */}
+                            <div className="absolute inset-3 border-[3px] border-[#5c3a21]/40 pointer-events-none"
+                                style={{ clipPath: 'polygon(1% 1%, 99% 1.5%, 98.5% 99%, 0.5% 98.5%)' }}></div>
 
-                            <div className="flex items-center justify-center mb-3 text-[#3a2012]">
-                                <span className="text-sm font-serif font-black uppercase tracking-[0.2em] flex items-center gap-2 border-b border-[#5c3a21] pb-1">
-                                    <Swords size={20} /> DETALLES DEL ENCUENTRO
+                            <div className="flex items-center justify-center mb-4 text-[#3a2012]">
+                                <span className="text-lg font-cinzel font-black uppercase tracking-[0.4em] flex items-center gap-3 border-b-2 border-[#5c3a21]/60 pb-1">
+                                    <Swords size={24} className="text-[#5c3a21]" /> DETALLES DEL ENCUENTRO
                                 </span>
                             </div>
 
-                            <p className="text-base md:text-xl text-[#2a170a] text-center leading-relaxed font-serif italic font-semibold max-w-2xl mx-auto">
+                            <p className="text-xl md:text-2xl text-[#2a170a] text-center leading-[1.6] font-crimson italic font-bold max-w-2xl mx-auto drop-shadow-sm">
                                 {match.description || "Un duelo legendario en las tierras sombrías. Dos campeones de 'Boars Slayers' se enfrentan por la gloria eterna en una batalla que sacudirá los cimientos del reino. ¿Quién prevalecerá?"}
                             </p>
+
+                            {/* Decorative corner accents */}
+                            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-[#5c3a21]/30"></div>
+                            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[#5c3a21]/30"></div>
                         </div>
 
-                        {/* Twitch Button underneath */}
-                        <div className="flex justify-center mt-6">
+                        {/* Metallic Twitch Button underneath */}
+                        <div className="flex justify-center mt-8">
                             {match.stream_url && (
                                 <a
                                     href={match.stream_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="relative inline-flex items-center justify-center gap-3 px-12 py-4 bg-gradient-to-r from-[#4d2c88] via-[#6441a5] to-[#4d2c88] text-white text-sm font-black uppercase tracking-[0.3em] transition-all shadow-[0_0_20px_rgba(100,65,165,0.6)] hover:shadow-[0_0_40px_rgba(100,65,165,0.9)] hover:scale-105 active:scale-95 group overflow-hidden border-2 border-[#9b6cd8] rounded-full"
+                                    className="relative inline-flex items-center justify-center gap-4 px-14 py-5 font-cinzel font-black text-white text-base uppercase tracking-[0.3em] transition-all group overflow-hidden border-2 border-[#ffd700]/30 rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.8)]"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #1b0a33 0%, #4d2c88 50%, #1b0a33 100%)',
+                                        boxShadow: '0 0 20px rgba(155, 108, 216, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.1)',
+                                    }}
                                 >
-                                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 pointer-events-none"></div>
-                                    <Twitch size={24} className="animate-pulse" /> VER TRANSMISIÓN
+                                    {/* Lustre Animado */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+
+                                    {/* Hover resplandor */}
+                                    <div className="absolute inset-0 bg-[#ffd700]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                                    <Twitch size={28} className="drop-shadow-[0_0_10px_white]" />
+                                    <span className="relative z-10 drop-shadow-md">VER TRANSMISIÓN</span>
+
+                                    {/* Bordes dorados sutiles */}
+                                    <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-[#ffd700]/60"></div>
+                                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-[#ffd700]/60"></div>
                                 </a>
                             )}
                         </div>
 
                         {match.status === 'completed' && match.result_score && (
                             <div className="mt-8 flex flex-col items-center">
-                                <span className="text-5xl md:text-7xl font-serif font-black text-transparent bg-clip-text bg-gradient-to-b from-stone-200 to-stone-500 drop-shadow-[0_5px_15px_rgba(0,0,0,1)]">
+                                <span className="text-6xl md:text-8xl font-cinzel font-black text-transparent bg-clip-text bg-gradient-to-b from-[#ffd700] to-[#b8860b] drop-shadow-[0_10px_30px_rgba(0,0,0,1)]">
                                     {match.result_score}
                                 </span>
                             </div>
