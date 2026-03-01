@@ -23,6 +23,11 @@ const animationStyles = `
   100% { transform: translateY(0px); }
 }
 
+@keyframes slow-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @keyframes pulse-glow {
   0% { opacity: 0.4; }
   50% { opacity: 0.8; }
@@ -37,12 +42,24 @@ const animationStyles = `
   animation: float 6s ease-in-out infinite;
 }
 
+.animate-slow-spin {
+  animation: slow-spin 60s linear infinite;
+}
+
+.animate-slow-spin-reverse {
+  animation: slow-spin 45s linear infinite reverse;
+}
+
 .font-cinzel {
   font-family: 'Cinzel', serif;
 }
 
 .font-crimson {
   font-family: 'Crimson Text', serif;
+}
+
+.ornate-frame {
+  clip-path: polygon(50% 0%, 65% 5%, 80% 0%, 95% 20%, 100% 35%, 95% 50%, 100% 65%, 95% 80%, 80% 100%, 65% 95%, 50% 100%, 35% 95%, 20% 100%, 5% 80%, 0% 65%, 5% 50%, 0% 35%, 5% 20%, 20% 0%, 35% 5%);
 }
 
 .parchment-border {
@@ -203,23 +220,43 @@ export const ShowmatchDetail: React.FC = () => {
 
                         {/* Outer P1 Container - Left Side */}
                         <div className="flex flex-col items-center w-48 relative z-20 shrink-0 animate-float">
-                            {/* Glowing P1 Ring */}
-                            <div className="relative w-32 h-32 md:w-56 md:h-56 mb-4 flex items-center justify-center">
-                                {/* Outer Glow Effect */}
-                                <div className="absolute inset-0 rounded-full bg-blue-500/20 blur-2xl animate-pulse"></div>
-                                {/* Intricate Blue Ring Style */}
-                                <div className="absolute inset-0 rounded-full border-[12px] border-[#0a2e5c]/80 shadow-[0_0_30px_#00bfff,inset_0_0_20px_#00bfff] animate-[spin_30s_linear_infinite]">
-                                    {/* Decorative outer markers */}
-                                    <div className="absolute -inset-[14px] border-[2px] border-blue-400/50 rounded-full border-dashed opacity-50"></div>
+                            {/* Glowing Ornate P1 Frame */}
+                            <div className="relative w-40 h-40 md:w-64 md:h-64 mb-4 flex items-center justify-center">
+                                {/* Intense Radiating Glow */}
+                                <div className="absolute inset-0 bg-blue-500/30 blur-[60px] animate-pulse"></div>
+
+                                {/* Ornate Frame Layer 1 - Outer Metallic Border */}
+                                <div className="absolute inset-0 ornate-frame animate-slow-spin shadow-[0_0_20px_rgba(30,144,255,0.6)]"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #1e3a8a 100%)',
+                                        padding: '4px'
+                                    }}>
+                                    {/* Inner Metallic Lining */}
+                                    <div className="w-full h-full ornate-frame bg-[#0a192f] flex items-center justify-center"
+                                        style={{ border: '2px solid rgba(255,255,255,0.1)' }}>
+                                    </div>
                                 </div>
-                                {/* Inner Avatar */}
-                                <div className="absolute inset-3 rounded-full bg-stone-900 overflow-hidden flex items-center justify-center z-10 border-[6px] border-blue-400/80 shadow-[inset_0_0_30px_#000,0_0_40px_rgba(0,191,255,0.4)]">
+
+                                {/* Ornate Frame Layer 2 - Inner Glowing Border */}
+                                <div className="absolute inset-4 ornate-frame animate-slow-spin-reverse opacity-80"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #60a5fa 0%, #2563eb 100%)',
+                                        padding: '2px'
+                                    }}>
+                                    <div className="w-full h-full ornate-frame bg-stone-900"></div>
+                                </div>
+
+                                {/* Circular Avatar in the middle */}
+                                <div className="absolute inset-8 rounded-full bg-stone-950 overflow-hidden flex items-center justify-center z-10 border-[6px] border-blue-400/90 shadow-[inset_0_0_40px_rgba(0,0,0,1),0_0_30px_rgba(59,130,246,0.6)]">
                                     {p1Avatar ? (
                                         <img src={p1Avatar} alt={p1Name} className="w-full h-full object-cover scale-110" />
                                     ) : (
-                                        <div className="w-full h-full bg-stone-900 flex items-center justify-center text-blue-500 font-bold text-2xl">P1</div>
+                                        <div className="w-full h-full bg-stone-900 flex items-center justify-center text-blue-500 font-black text-3xl font-cinzel">BS</div>
                                     )}
                                 </div>
+
+                                {/* Decorative Blue Sparkle Overlays */}
+                                <div className="absolute -inset-4 bg-[radial-gradient(circle,rgba(59,130,246,0.2)_0%,transparent_70%)] animate-pulse"></div>
                             </div>
 
                             <h2 className="text-xl md:text-3xl font-cinzel font-black text-white uppercase tracking-widest text-center drop-shadow-[0_5px_15px_rgba(0,0,0,1)]">
@@ -255,23 +292,43 @@ export const ShowmatchDetail: React.FC = () => {
 
                         {/* Outer P2 Container - Right Side */}
                         <div className="flex flex-col items-center w-48 relative z-20 shrink-0 animate-float" style={{ animationDelay: '1s' }}>
-                            {/* Glowing P2 Ring */}
-                            <div className="relative w-32 h-32 md:w-56 md:h-56 mb-4 flex items-center justify-center">
-                                {/* Outer Glow Effect */}
-                                <div className="absolute inset-0 rounded-full bg-red-600/20 blur-2xl animate-pulse"></div>
-                                {/* Intricate Red Ring Style */}
-                                <div className="absolute inset-0 rounded-full border-[12px] border-[#5c0a0a]/80 shadow-[0_0_30px_#ff0000,inset_0_0_20px_#ff0000] animate-[spin_30s_linear_infinite_reverse]">
-                                    {/* Decorative outer markers */}
-                                    <div className="absolute -inset-[14px] border-[2px] border-red-500/50 rounded-full border-dashed opacity-50"></div>
+                            {/* Glowing Ornate P2 Frame */}
+                            <div className="relative w-40 h-40 md:w-64 md:h-64 mb-4 flex items-center justify-center">
+                                {/* Intense Radiating Glow */}
+                                <div className="absolute inset-0 bg-red-600/30 blur-[60px] animate-pulse"></div>
+
+                                {/* Ornate Frame Layer 1 - Outer Metallic Border */}
+                                <div className="absolute inset-0 ornate-frame animate-slow-spin-reverse shadow-[0_0_20px_rgba(255,69,0,0.6)]"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #7f1d1d 0%, #ef4444 50%, #7f1d1d 100%)',
+                                        padding: '4px'
+                                    }}>
+                                    {/* Inner Metallic Lining */}
+                                    <div className="w-full h-full ornate-frame bg-[#1a0f0f] flex items-center justify-center"
+                                        style={{ border: '2px solid rgba(255,255,255,0.1)' }}>
+                                    </div>
                                 </div>
-                                {/* Inner Avatar */}
-                                <div className="absolute inset-3 rounded-full bg-stone-900 overflow-hidden flex items-center justify-center z-10 border-[6px] border-red-500/80 shadow-[inset_0_0_30px_#000,0_0_40px_rgba(255,0,0,0.4)]">
+
+                                {/* Ornate Frame Layer 2 - Inner Glowing Border */}
+                                <div className="absolute inset-4 ornate-frame animate-slow-spin opacity-80"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+                                        padding: '2px'
+                                    }}>
+                                    <div className="w-full h-full ornate-frame bg-stone-900"></div>
+                                </div>
+
+                                {/* Circular Avatar in the middle */}
+                                <div className="absolute inset-8 rounded-full bg-stone-950 overflow-hidden flex items-center justify-center z-10 border-[6px] border-red-500/90 shadow-[inset_0_0_40px_rgba(0,0,0,1),0_0_30px_rgba(239,68,68,0.6)]">
                                     {p2Avatar ? (
                                         <img src={p2Avatar} alt={p2Name} className="w-full h-full object-cover scale-110" />
                                     ) : (
-                                        <div className="w-full h-full bg-stone-900 flex items-center justify-center text-red-600 font-bold text-2xl">P2</div>
+                                        <div className="w-full h-full bg-stone-900 flex items-center justify-center text-red-600 font-black text-3xl font-cinzel">BS</div>
                                     )}
                                 </div>
+
+                                {/* Decorative Red Sparkle Overlays */}
+                                <div className="absolute -inset-4 bg-[radial-gradient(circle,rgba(239,68,68,0.2)_0%,transparent_70%)] animate-pulse"></div>
                             </div>
 
                             <h2 className="text-xl md:text-3xl font-cinzel font-black text-white uppercase tracking-widest text-center drop-shadow-[0_5px_15px_rgba(0,0,0,1)]">
