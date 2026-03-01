@@ -18,7 +18,21 @@ export const ShowmatchDetail: React.FC = () => {
             setLoading(true);
             const { data, error } = await supabase
                 .from('showmatches')
-                .select('*, p1:profiles!player1_id(username, avatar_url, favorite_civ), p2:profiles!player2_id(username, avatar_url, favorite_civ)')
+                .select(`
+                    *, 
+                    p1:profiles!player1_id(
+                        username, 
+                        avatar_url, 
+                        favorite_civ,
+                        user_badges(badges(image_url, description))
+                    ), 
+                    p2:profiles!player2_id(
+                        username, 
+                        avatar_url, 
+                        favorite_civ,
+                        user_badges(badges(image_url, description))
+                    )
+                `)
                 .eq('id', id)
                 .single();
 
@@ -33,21 +47,29 @@ export const ShowmatchDetail: React.FC = () => {
     useEffect(() => {
         if (!match || match.status !== 'scheduled') return;
 
-        const timer = setInterval(() => {
+        const updateTimer = () => {
             const now = new Date().getTime();
-            const distance = new Date(match.scheduled_time).getTime() - now;
+            const scheduledTime = new Date(match.scheduled_time).getTime();
+            const distance = scheduledTime - now;
 
             if (distance < 0) {
                 setTimeLeft('¡EN VIVO!');
-                clearInterval(timer);
             } else {
                 const days = Math.floor(distance / (1000 * 60 * 60 * 24));
                 const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+
+                if (days > 0) {
+                    setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+                } else {
+                    setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+                }
             }
-        }, 1000);
+        };
+
+        updateTimer();
+        const timer = setInterval(updateTimer, 1000);
 
         return () => clearInterval(timer);
     }, [match]);
@@ -68,6 +90,9 @@ export const ShowmatchDetail: React.FC = () => {
     const p2Name = p2?.username || match.p2_name || 'TBD';
     const p1Avatar = p1?.avatar_url || null;
     const p2Avatar = p2?.avatar_url || null;
+
+    const p1Badges = (p1?.user_badges || []).map((ub: any) => ub.badges);
+    const p2Badges = (p2?.user_badges || []).map((ub: any) => ub.badges);
 
     return (
         <div className="min-h-screen bg-stone-950 text-gray-200 font-sans selection:bg-gold-500/30">
@@ -98,7 +123,7 @@ export const ShowmatchDetail: React.FC = () => {
                         </div>
                     </div>
 
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-white mb-6 uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-stone-400 shadow-xl">
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-white mb-6 uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-stone-400 shadow-xl pb-2">
                         {match.title}
                     </h1>
 
@@ -128,22 +153,24 @@ export const ShowmatchDetail: React.FC = () => {
                                         <div className="w-full h-full bg-stone-900 flex items-center justify-center text-stone-700 font-bold text-4xl">P1</div>
                                     )}
                                 </div>
-                                {/* Civ Badge */}
-                                {p1?.favorite_civ && (
-                                    <div className="absolute bottom-4 right-4 bg-stone-900 border border-stone-700 px-3 py-1 rounded-full text-xs font-bold text-stone-300 shadow-xl">
-                                        {p1.favorite_civ}
-                                    </div>
-                                )}
                             </div>
                             <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-wider text-center drop-shadow-lg">
                                 {p1Name}
                             </h2>
+                            {/* Badges */}
+                            <div className="flex flex-wrap justify-center gap-2 mt-3">
+                                {p1Badges.map((badge: any, idx: number) => (
+                                    <div key={idx} className="w-8 h-8 rounded-full overflow-hidden border border-white/10 hover:border-gold-500 transition-colors bg-stone-900 p-0.5 group/badge" title={badge.description}>
+                                        <img src={badge.image_url} alt={badge.description} className="w-full h-full object-contain" />
+                                    </div>
+                                ))}
+                            </div>
                             <div className="h-1 w-24 bg-blue-600 mt-4 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.8)]"></div>
                         </div>
 
                         {/* VS Divider */}
-                        <div className="relative z-20 py-10 md:py-0">
-                            <div className="text-7xl md:text-9xl font-black italic text-transparent bg-clip-text bg-gradient-to-b from-gold-400 to-gold-700 drop-shadow-[0_0_30px_rgba(234,179,8,0.4)] transform md:-rotate-12">
+                        <div className="relative z-20 py-10 md:py-0 overflow-visible">
+                            <div className="text-7xl md:text-9xl font-black italic text-transparent bg-clip-text bg-gradient-to-b from-gold-400 to-gold-700 drop-shadow-[0_0_30px_rgba(234,179,8,0.4)] transform md:-rotate-12 leading-none p-4">
                                 VS
                             </div>
                         </div>
@@ -159,15 +186,18 @@ export const ShowmatchDetail: React.FC = () => {
                                         <div className="w-full h-full bg-stone-900 flex items-center justify-center text-stone-700 font-bold text-4xl">P2</div>
                                     )}
                                 </div>
-                                {p2?.favorite_civ && (
-                                    <div className="absolute bottom-4 right-4 bg-stone-900 border border-stone-700 px-3 py-1 rounded-full text-xs font-bold text-stone-300 shadow-xl">
-                                        {p2.favorite_civ}
-                                    </div>
-                                )}
                             </div>
                             <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-wider text-center drop-shadow-lg">
                                 {p2Name}
                             </h2>
+                            {/* Badges */}
+                            <div className="flex flex-wrap justify-center gap-2 mt-3">
+                                {p2Badges.map((badge: any, idx: number) => (
+                                    <div key={idx} className="w-8 h-8 rounded-full overflow-hidden border border-white/10 hover:border-gold-500 transition-colors bg-stone-900 p-0.5 group/badge" title={badge.description}>
+                                        <img src={badge.image_url} alt={badge.description} className="w-full h-full object-contain" />
+                                    </div>
+                                ))}
+                            </div>
                             <div className="h-1 w-24 bg-red-600 mt-4 rounded-full shadow-[0_0_10px_rgba(220,38,38,0.8)]"></div>
                         </div>
 

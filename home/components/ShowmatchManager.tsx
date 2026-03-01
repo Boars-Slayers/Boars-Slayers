@@ -8,10 +8,16 @@ export const ShowmatchManager: React.FC = () => {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [isCreating, setIsCreating] = useState(false);
 
+    const getLocalTimeISO = () => {
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        return new Date(now.getTime() - offset).toISOString().slice(0, 16);
+    };
+
     const [newMatch, setNewMatch] = useState<Partial<Showmatch>>({
         title: '',
         status: 'scheduled',
-        scheduled_time: new Date().toISOString().slice(0, 16),
+        scheduled_time: getLocalTimeISO(),
         stream_url: ''
     });
 
@@ -31,10 +37,22 @@ export const ShowmatchManager: React.FC = () => {
 
     const handleCreate = async () => {
         if (!newMatch.title) return;
-        const { error } = await supabase.from('showmatches').insert(newMatch);
+
+        // Convert to UTC before saving
+        const dataToSave = {
+            ...newMatch,
+            scheduled_time: new Date(newMatch.scheduled_time || '').toISOString()
+        };
+
+        const { error } = await supabase.from('showmatches').insert(dataToSave);
         if (!error) {
             setIsCreating(false);
-            setNewMatch({ title: '', status: 'scheduled', scheduled_time: new Date().toISOString().slice(0, 16), stream_url: '' });
+            setNewMatch({
+                title: '',
+                status: 'scheduled',
+                scheduled_time: getLocalTimeISO(),
+                stream_url: ''
+            });
             fetchData();
         }
     };

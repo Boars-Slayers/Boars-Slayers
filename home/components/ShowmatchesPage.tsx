@@ -4,6 +4,35 @@ import { supabase } from '../lib/supabase';
 import { Showmatch } from '../types';
 import { Swords, Calendar, Play, User } from 'lucide-react';
 
+const CountdownLabel: React.FC<{ scheduledTime: string }> = ({ scheduledTime }) => {
+    const [timeLeft, setTimeLeft] = useState('');
+
+    useEffect(() => {
+        const update = () => {
+            const now = new Date().getTime();
+            const distance = new Date(scheduledTime).getTime() - now;
+
+            if (distance < 0) {
+                setTimeLeft('EN VIVO');
+            } else {
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                if (days > 0) setTimeLeft(`${days}d ${hours}h`);
+                else if (hours > 0) setTimeLeft(`${hours}h ${minutes}m`);
+                else setTimeLeft(`${minutes}m ${seconds}s`);
+            }
+        };
+        update();
+        const timer = setInterval(update, 1000);
+        return () => clearInterval(timer);
+    }, [scheduledTime]);
+
+    return <>{timeLeft || 'Programado'}</>;
+};
+
 export const ShowmatchesPage: React.FC = () => {
     const navigate = useNavigate();
     const [matches, setMatches] = useState<Showmatch[]>([]);
@@ -66,7 +95,7 @@ export const ShowmatchesPage: React.FC = () => {
                                                     'bg-blue-500/20 text-blue-400 border-blue-500/30'}
                                         `}>
                                             {match.status === 'live' ? 'En Vivo' :
-                                                match.status === 'completed' ? 'Finalizado' : 'Programado'}
+                                                match.status === 'completed' ? 'Finalizado' : <CountdownLabel scheduledTime={match.scheduled_time} />}
                                         </div>
                                     </div>
 
