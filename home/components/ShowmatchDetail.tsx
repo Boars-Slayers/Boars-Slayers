@@ -12,9 +12,9 @@ const animationStyles = `
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 
 @keyframes breathing {
-  0% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
-  50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 50px rgba(255, 215, 0, 0.5); }
-  100% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
 }
 
 @keyframes float {
@@ -177,8 +177,8 @@ export const ShowmatchDetail: React.FC = () => {
                 {/* Bottom Embers Resplandor */}
                 <div className="absolute inset-x-0 bottom-0 h-32 bg-[#ff6600]/10 blur-3xl"></div>
 
-                {/* Embedded Particles - Moved to front of background */}
-                <div className="absolute inset-0 z-20 pointer-events-none">
+                {/* Embedded Particles - High Z-Index and NO parent background */}
+                <div className="absolute inset-0 z-[50] pointer-events-none">
                     <FireParticles />
                 </div>
             </div>
@@ -218,42 +218,27 @@ export const ShowmatchDetail: React.FC = () => {
                     {/* VS Section - Cinematic Wide Layout */}
                     <div className="flex flex-row items-center justify-between gap-4 w-full max-w-7xl mx-auto mb-4 md:mb-12 relative h-auto mt-4 md:mt-12">
 
-                        {/* Outer P1 Container - Left Side */}
+                        {/* Outer P1 Container - Clean & Subtle Design */}
                         <div className="flex flex-col items-center w-40 md:w-56 relative z-30 shrink-0 animate-float">
-                            {/* Glowing Ornate P1 Frame */}
-                            <div className="relative w-36 h-36 md:w-64 md:h-64 mb-4 flex items-center justify-center">
-                                {/* Intense Radiating Glow - Radial to avoid "box" effect */}
-                                <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(59,130,246,0.4)_0%,transparent_70%)] animate-pulse scale-150"></div>
+                            {/* Subtle Ambient Glow */}
+                            <div className="relative w-36 h-36 md:w-56 md:h-56 mb-4 flex items-center justify-center">
+                                {/* Soft Radial Glow */}
+                                <div className="absolute inset-[-20%] bg-[radial-gradient(circle,rgba(59,130,246,0.2)_0%,transparent_70%)] animate-pulse"></div>
 
-                                {/* Ornate Frame Layer 1 - Outer Metallic Border */}
-                                <div className="absolute inset-0 ornate-frame animate-slow-spin"
-                                    style={{
-                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #1e3a8a 100%)',
-                                        padding: '4px',
-                                        filter: 'drop-shadow(0 0 20px rgba(30,144,255,0.8))'
-                                    }}>
-                                    {/* Inner Metallic Lining */}
-                                    <div className="w-full h-full ornate-frame bg-[#0a192f] flex items-center justify-center"
-                                        style={{ border: '1px solid rgba(255,255,255,0.3)' }}>
+                                {/* Metallic Ring Border */}
+                                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-400 via-blue-900 to-blue-400 p-[2px] shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+                                    <div className="w-full h-full rounded-full bg-stone-950 p-[4px] border border-blue-400/20">
+                                        {/* Avatar Mask */}
+                                        <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-stone-900 relative">
+                                            {p1Avatar ? (
+                                                <img src={p1Avatar} alt={p1Name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-blue-500 font-black text-2xl md:text-3xl font-cinzel">BS</div>
+                                            )}
+                                            {/* Inner Glassy Shadow */}
+                                            <div className="absolute inset-0 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] pointer-events-none"></div>
+                                        </div>
                                     </div>
-                                </div>
-
-                                {/* Ornate Frame Layer 2 - Inner Glowing Border */}
-                                <div className="absolute inset-2 md:inset-3 ornate-frame animate-slow-spin-reverse opacity-90"
-                                    style={{
-                                        background: 'linear-gradient(135deg, #60a5fa 0%, #2563eb 100%)',
-                                        padding: '2px'
-                                    }}>
-                                    <div className="w-full h-full ornate-frame bg-stone-950"></div>
-                                </div>
-
-                                {/* Masked Avatar in the middle - No thick white border */}
-                                <div className="absolute inset-4 md:inset-6 ornate-frame bg-stone-950 overflow-hidden flex items-center justify-center z-10 shadow-[inset_0_0_50px_rgba(0,0,0,1)]">
-                                    {p1Avatar ? (
-                                        <img src={p1Avatar} alt={p1Name} className="w-full h-full object-cover scale-110" />
-                                    ) : (
-                                        <div className="w-full h-full bg-stone-900 flex items-center justify-center text-blue-500 font-black text-2xl md:text-3xl font-cinzel">BS</div>
-                                    )}
                                 </div>
                             </div>
 
@@ -278,53 +263,38 @@ export const ShowmatchDetail: React.FC = () => {
                         {/* Center Stage - Boars are in the background image */}
                         <div className="flex-1 flex items-center justify-center relative min-h-[300px] md:min-h-[400px]">
 
-                            <div className="relative z-30 transform hover:scale-110 transition-transform duration-500 animate-breathing flex items-center justify-center">
-                                {/* Intense glowing VS sign - Pure radial gradient gradient, NO container shadow */}
-                                <div className="absolute w-[200%] h-[200%] bg-[radial-gradient(circle,rgba(255,215,0,0.3)_0%,transparent_70%)] animate-pulse pointer-events-none"></div>
+                            <div className="relative z-30 transform hover:scale-105 transition-transform duration-500 animate-breathing flex items-center justify-center">
+                                {/* Pure Radial Glow - Absolutely NO box-shadow or background */}
+                                <div className="absolute w-[250%] h-[250%] bg-[radial-gradient(circle,rgba(255,215,0,0.2)_0%,transparent_70%)] animate-pulse pointer-events-none"></div>
                                 <img
                                     src="/vs.png"
                                     alt="VS"
-                                    className="w-48 md:w-[450px] h-auto relative z-10 select-none"
+                                    className="w-48 md:w-[450px] h-auto relative z-10 select-none pointer-events-none"
                                 />
                             </div>
                         </div>
 
-                        {/* Outer P2 Container - Right Side */}
+                        {/* Outer P2 Container - Clean & Subtle Design */}
                         <div className="flex flex-col items-center w-40 md:w-56 relative z-30 shrink-0 animate-float" style={{ animationDelay: '1s' }}>
-                            {/* Glowing Ornate P2 Frame */}
-                            <div className="relative w-36 h-36 md:w-64 md:h-64 mb-4 flex items-center justify-center">
-                                {/* Intense Radiating Glow - Radial to avoid "box" effect */}
-                                <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(220,38,38,0.4)_0%,transparent_70%)] animate-pulse scale-150"></div>
+                            {/* Subtle Ambient Glow */}
+                            <div className="relative w-36 h-36 md:w-56 md:h-56 mb-4 flex items-center justify-center">
+                                {/* Soft Radial Glow */}
+                                <div className="absolute inset-[-20%] bg-[radial-gradient(circle,rgba(220,38,38,0.2)_0%,transparent_70%)] animate-pulse"></div>
 
-                                {/* Ornate Frame Layer 1 - Outer Metallic Border */}
-                                <div className="absolute inset-0 ornate-frame animate-slow-spin-reverse"
-                                    style={{
-                                        background: 'linear-gradient(135deg, #7f1d1d 0%, #ef4444 50%, #7f1d1d 100%)',
-                                        padding: '4px',
-                                        filter: 'drop-shadow(0 0 20px rgba(220,38,38,0.8))'
-                                    }}>
-                                    {/* Inner Metallic Lining */}
-                                    <div className="w-full h-full ornate-frame bg-[#1a0f0f] flex items-center justify-center"
-                                        style={{ border: '1px solid rgba(255,255,255,0.3)' }}>
+                                {/* Metallic Ring Border */}
+                                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-400 via-red-900 to-red-400 p-[2px] shadow-[0_0_30px_rgba(220,38,38,0.3)]">
+                                    <div className="w-full h-full rounded-full bg-stone-950 p-[4px] border border-red-400/20">
+                                        {/* Avatar Mask */}
+                                        <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-stone-900 relative">
+                                            {p2Avatar ? (
+                                                <img src={p2Avatar} alt={p2Name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-red-600 font-black text-2xl md:text-3xl font-cinzel">BS</div>
+                                            )}
+                                            {/* Inner Glassy Shadow */}
+                                            <div className="absolute inset-0 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] pointer-events-none"></div>
+                                        </div>
                                     </div>
-                                </div>
-
-                                {/* Ornate Frame Layer 2 - Inner Glowing Border */}
-                                <div className="absolute inset-2 md:inset-3 ornate-frame animate-slow-spin opacity-90"
-                                    style={{
-                                        background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
-                                        padding: '2px'
-                                    }}>
-                                    <div className="w-full h-full ornate-frame bg-stone-950"></div>
-                                </div>
-
-                                {/* Masked Avatar in the middle - No thick white border */}
-                                <div className="absolute inset-4 md:inset-6 ornate-frame bg-stone-950 overflow-hidden flex items-center justify-center z-10 shadow-[inset_0_0_50px_rgba(0,0,0,1)]">
-                                    {p2Avatar ? (
-                                        <img src={p2Avatar} alt={p2Name} className="w-full h-full object-cover scale-110" />
-                                    ) : (
-                                        <div className="w-full h-full bg-stone-900 flex items-center justify-center text-red-600 font-black text-2xl md:text-3xl font-cinzel">BS</div>
-                                    )}
                                 </div>
                             </div>
 
