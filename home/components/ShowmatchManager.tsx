@@ -42,9 +42,12 @@ export const ShowmatchManager: React.FC = () => {
     const handleCreate = async () => {
         if (!newMatch.title) return;
 
-        // Convert to UTC before saving
+        // Limpieza de datos: Extraemos solo los campos que pertenecen a la tabla
+        // Evitamos enviar 'p1', 'p2' (que vienen del join) o 'created_at'
+        const { p1, p2, created_at, id, ...cleanData } = newMatch as any;
+
         const dataToSave = {
-            ...newMatch,
+            ...cleanData,
             scheduled_time: new Date(newMatch.scheduled_time || '').toISOString()
         };
 
@@ -55,20 +58,24 @@ export const ShowmatchManager: React.FC = () => {
             res = await supabase.from('showmatches').insert(dataToSave);
         }
 
-        if (!res.error) {
-            setIsCreating(false);
-            setEditingId(null);
-            setNewMatch({
-                title: '',
-                description: '',
-                status: 'scheduled',
-                scheduled_time: getLocalTimeISO(),
-                stream_url: '',
-                twitch_url: '',
-                youtube_url: ''
-            });
-            fetchData();
+        if (res.error) {
+            console.error("Error al guardar showmatch:", res.error);
+            alert("Error de Base de Datos: " + res.error.message + "\n\nTip: Revisa si las columnas twitch_url y youtube_url existen en Supabase.");
+            return;
         }
+
+        setIsCreating(false);
+        setEditingId(null);
+        setNewMatch({
+            title: '',
+            description: '',
+            status: 'scheduled',
+            scheduled_time: getLocalTimeISO(),
+            stream_url: '',
+            twitch_url: '',
+            youtube_url: ''
+        });
+        fetchData();
     };
 
     const handleEdit = (match: Showmatch) => {
