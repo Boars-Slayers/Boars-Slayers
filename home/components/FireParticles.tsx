@@ -5,14 +5,10 @@ import { loadSlim } from "tsparticles-slim";
 
 export const FireParticles = () => {
     const particlesInit = useCallback(async (engine: Engine) => {
-        // you can initialize the tsParticles instance (engine) here, adding custom shapes or presets
-        // this loads the tsparticles package bundle, it's the easiest method for getting everything ready
-        // starting from v2 you can add only the features you need reducing the bundle size
         await loadSlim(engine);
     }, []);
 
     const particlesLoaded = useCallback(async (_container: Container | undefined) => {
-        // await console.log(container);
     }, []);
 
     return (
@@ -26,31 +22,10 @@ export const FireParticles = () => {
                         value: "transparent",
                     },
                 },
-                fpsLimit: 60, // Capped at 60 for consistency and performance
-                interactivity: {
-                    events: {
-                        onHover: {
-                            enable: true,
-                            mode: "bubble",
-                        },
-                        resize: true,
-                    },
-                    modes: {
-                        bubble: {
-                            distance: 200,
-                            duration: 2,
-                            opacity: 0,
-                            size: 0,
-                            speed: 3
-                        },
-                    },
-                },
+                fpsLimit: 60,
                 particles: {
                     color: {
-                        value: ["#ffffff", "#ffcc00", "#ff9900", "#ff6600", "#ff3300"], // Added white/bright yellow for 'hot' sparks
-                    },
-                    links: {
-                        enable: false,
+                        value: ["#ffffff", "#fff0a0", "#ffd700", "#ff8c00", "#ff4500", "#ff0000"],
                     },
                     move: {
                         direction: "top",
@@ -59,52 +34,54 @@ export const FireParticles = () => {
                             default: "out",
                         },
                         random: true,
-                        speed: { min: 2, max: 6 }, // Faster, more erratic movement
+                        speed: { min: 2, max: 5 }, // Slightly slower for more "organic" feel
                         straight: false,
-                        vibrate: false,
-                        warp: false,
+                        // Using 'vibrate' or just random direction for dance, as wobble might be version-locked
+                        vibrate: true,
                     },
                     number: {
                         density: {
                             enable: true,
                             area: 800,
                         },
-                        value: 50, // Reduced count for performance
+                        value: 30, // Even lower count for better focus on each "lick"
                     },
                     opacity: {
-                        value: { min: 0.1, max: 1 },
+                        value: { min: 0, max: 0.7 },
                         animation: {
                             enable: true,
-                            speed: 2,
+                            speed: 1,
+                            startValue: "min",
                             sync: false,
                         }
                     },
                     shape: {
-                        type: "polygon", // Polygonal shape for 'spark' look
+                        type: "path",
                         options: {
-                            polygon: {
-                                sides: 3, // Triangles look like sharp sparks
+                            path: {
+                                // Custom SVG Path for a "Flame Lick / Drop" shape
+                                d: "M20 40 Q25 30 20 20 Q15 10 20 0 Q25 10 30 20 Q35 30 20 40",
                             }
                         }
                     },
                     size: {
-                        value: { min: 1, max: 4 },
+                        value: { min: 2, max: 10 },
+                        animation: {
+                            enable: true,
+                            speed: 4,
+                            sync: false,
+                            startValue: "min",
+                            destroy: "max"
+                        }
+                    },
+                    rotate: {
+                        value: { min: -15, max: 15 },
                         animation: {
                             enable: true,
                             speed: 5,
                             sync: false
-                        }
-                    },
-                    rotate: {
-                        value: { min: 0, max: 360 },
-                        animation: {
-                            enable: true,
-                            speed: 30, // Fast spinning
-                            sync: false
                         },
-                        direction: "random",
                     },
-                    // Removed shadow blur as it causes the main performance lag
                 },
                 detectRetina: true,
             }}
