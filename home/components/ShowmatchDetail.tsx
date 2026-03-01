@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Showmatch } from '../types';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
-import { Swords, ArrowLeft, Clock, Twitch, Edit2, Check, X as CloseIcon, Info } from 'lucide-react';
+import { Swords, ArrowLeft, Clock, Twitch, Edit2, Check, X as CloseIcon } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 export const ShowmatchDetail: React.FC = () => {
