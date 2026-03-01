@@ -16,6 +16,7 @@ export const ShowmatchManager: React.FC = () => {
 
     const [newMatch, setNewMatch] = useState<Partial<Showmatch>>({
         title: '',
+        description: '',
         status: 'scheduled',
         scheduled_time: getLocalTimeISO(),
         stream_url: ''
@@ -49,6 +50,7 @@ export const ShowmatchManager: React.FC = () => {
             setIsCreating(false);
             setNewMatch({
                 title: '',
+                description: '',
                 status: 'scheduled',
                 scheduled_time: getLocalTimeISO(),
                 stream_url: ''
@@ -102,6 +104,15 @@ export const ShowmatchManager: React.FC = () => {
                                 onChange={e => setNewMatch({ ...newMatch, title: e.target.value })}
                                 className="w-full bg-stone-900 border border-stone-800 rounded-lg p-2.5 text-white outline-none focus:border-gold-500"
                                 placeholder="Ej: El Duelo de los Titanes"
+                            />
+                        </div>
+                        <div className="col-span-full">
+                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-2">Descripción (Opcional)</label>
+                            <textarea
+                                value={newMatch.description}
+                                onChange={e => setNewMatch({ ...newMatch, description: e.target.value })}
+                                className="w-full bg-stone-900 border border-stone-800 rounded-lg p-2.5 text-white outline-none focus:border-gold-500 min-h-[100px]"
+                                placeholder="Escribe aquí los detalles del encuentro..."
                             />
                         </div>
                         <div>
