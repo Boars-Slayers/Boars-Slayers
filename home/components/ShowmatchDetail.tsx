@@ -157,7 +157,7 @@ export const ShowmatchDetail: React.FC = () => {
     const p2Badges = (p2?.user_badges || []).map((ub: any) => ub.badges);
 
     return (
-        <div className="h-screen bg-stone-950 text-gray-200 font-sans selection:bg-gold-500/30 overflow-hidden relative">
+        <div className="min-h-screen bg-stone-950 text-gray-200 font-sans selection:bg-gold-500/30 overflow-x-hidden relative">
             <style>{animationStyles}</style>
             <Navbar />
 
@@ -187,13 +187,13 @@ export const ShowmatchDetail: React.FC = () => {
                 <div className="max-w-6xl mx-auto px-4 w-full h-full flex flex-col justify-center py-4">
 
                     {/* Header Info - Smaller */}
-                    <div className="text-center mb-2">
-                        <Link to="/showmatchs" className="inline-flex items-center gap-1.5 text-stone-200 hover:text-white mb-2 transition-colors group text-xs drop-shadow-lg font-bold">
-                            <ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform" /> Cartelera
+                    <div className="text-center mb-1 md:mb-4">
+                        <Link to="/showmatchs" className="inline-flex items-center gap-1.5 text-stone-200 hover:text-white mb-1 transition-colors group text-[10px] drop-shadow-lg font-bold">
+                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Cartelera
                         </Link>
 
                         <div className="flex justify-center mb-1">
-                            <div className={`px-3 py-0.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] border backdrop-blur-md shadow-lg
+                            <div className={`px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border backdrop-blur-md shadow-lg
                                 ${match.status === 'live' ? 'bg-red-600/40 text-white border-red-500 animate-pulse' :
                                     match.status === 'completed' ? 'bg-stone-800/60 text-stone-200 border-stone-600' :
                                         'bg-gold-600/40 text-white border-gold-500'}
@@ -202,13 +202,13 @@ export const ShowmatchDetail: React.FC = () => {
                             </div>
                         </div>
 
-                        <h1 className="text-3xl md:text-6xl font-cinzel font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-stone-200 to-stone-400 mb-1 uppercase tracking-[0.1em] drop-shadow-[0_4px_15px_rgba(0,0,0,1)]">
+                        <h1 className="text-2xl md:text-5xl font-cinzel font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-stone-200 to-stone-400 mb-1 uppercase tracking-[0.1em] drop-shadow-[0_4px_15px_rgba(0,0,0,1)]">
                             {match.title}
                         </h1>
 
                         {match.status === 'scheduled' && (
-                            <div className="flex justify-center items-center gap-2 mb-2">
-                                <span className="text-2xl md:text-4xl font-cinzel text-transparent bg-clip-text bg-gradient-to-b from-[#ffd700] to-[#b8860b] tracking-[0.3em] uppercase drop-shadow-[0_0_20px_rgba(255,170,0,0.8)]">
+                            <div className="flex justify-center items-center gap-2">
+                                <span className="text-xl md:text-3xl font-cinzel text-transparent bg-clip-text bg-gradient-to-b from-[#ffd700] to-[#b8860b] tracking-[0.2em] uppercase drop-shadow-[0_0_20px_rgba(255,170,0,0.8)]">
                                     {timeLeft || '...'}
                                 </span>
                             </div>
@@ -216,47 +216,45 @@ export const ShowmatchDetail: React.FC = () => {
                     </div>
 
                     {/* VS Section - Cinematic Wide Layout */}
-                    <div className="flex flex-row items-center justify-between gap-4 w-full max-w-7xl mx-auto mb-12 relative h-auto mt-8 md:mt-24">
+                    <div className="flex flex-row items-center justify-between gap-4 w-full max-w-7xl mx-auto mb-4 md:mb-12 relative h-auto mt-4 md:mt-12">
 
                         {/* Outer P1 Container - Left Side */}
-                        <div className="flex flex-col items-center w-48 relative z-20 shrink-0 animate-float">
+                        <div className="flex flex-col items-center w-40 md:w-56 relative z-20 shrink-0 animate-float">
                             {/* Glowing Ornate P1 Frame */}
-                            <div className="relative w-40 h-40 md:w-64 md:h-64 mb-4 flex items-center justify-center">
-                                {/* Intense Radiating Glow */}
-                                <div className="absolute inset-0 bg-blue-500/30 blur-[60px] animate-pulse"></div>
+                            <div className="relative w-36 h-36 md:w-64 md:h-64 mb-4 flex items-center justify-center">
+                                {/* Intense Radiating Glow - Radial to avoid "box" effect */}
+                                <div className="absolute inset-[-40%] bg-[radial-gradient(circle,rgba(59,130,246,0.3)_0%,transparent_70%)] animate-pulse"></div>
 
                                 {/* Ornate Frame Layer 1 - Outer Metallic Border */}
-                                <div className="absolute inset-0 ornate-frame animate-slow-spin shadow-[0_0_20px_rgba(30,144,255,0.6)]"
+                                <div className="absolute inset-0 ornate-frame animate-slow-spin"
                                     style={{
                                         background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #1e3a8a 100%)',
-                                        padding: '4px'
+                                        padding: '4px',
+                                        filter: 'drop-shadow(0 0 15px rgba(30,144,255,0.8))'
                                     }}>
                                     {/* Inner Metallic Lining */}
                                     <div className="w-full h-full ornate-frame bg-[#0a192f] flex items-center justify-center"
-                                        style={{ border: '2px solid rgba(255,255,255,0.1)' }}>
+                                        style={{ border: '1px solid rgba(255,255,255,0.2)' }}>
                                     </div>
                                 </div>
 
                                 {/* Ornate Frame Layer 2 - Inner Glowing Border */}
-                                <div className="absolute inset-4 ornate-frame animate-slow-spin-reverse opacity-80"
+                                <div className="absolute inset-3 md:inset-5 ornate-frame animate-slow-spin-reverse opacity-90"
                                     style={{
                                         background: 'linear-gradient(135deg, #60a5fa 0%, #2563eb 100%)',
                                         padding: '2px'
                                     }}>
-                                    <div className="w-full h-full ornate-frame bg-stone-900"></div>
+                                    <div className="w-full h-full ornate-frame bg-stone-950"></div>
                                 </div>
 
                                 {/* Circular Avatar in the middle */}
-                                <div className="absolute inset-8 rounded-full bg-stone-950 overflow-hidden flex items-center justify-center z-10 border-[6px] border-blue-400/90 shadow-[inset_0_0_40px_rgba(0,0,0,1),0_0_30px_rgba(59,130,246,0.6)]">
+                                <div className="absolute inset-6 md:inset-10 rounded-full bg-stone-950 overflow-hidden flex items-center justify-center z-10 border-[4px] md:border-[6px] border-blue-400/90 shadow-[inset_0_0_40px_rgba(0,0,0,1),0_0_30px_rgba(59,130,246,0.6)]">
                                     {p1Avatar ? (
                                         <img src={p1Avatar} alt={p1Name} className="w-full h-full object-cover scale-110" />
                                     ) : (
-                                        <div className="w-full h-full bg-stone-900 flex items-center justify-center text-blue-500 font-black text-3xl font-cinzel">BS</div>
+                                        <div className="w-full h-full bg-stone-900 flex items-center justify-center text-blue-500 font-black text-2xl md:text-3xl font-cinzel">BS</div>
                                     )}
                                 </div>
-
-                                {/* Decorative Blue Sparkle Overlays */}
-                                <div className="absolute -inset-4 bg-[radial-gradient(circle,rgba(59,130,246,0.2)_0%,transparent_70%)] animate-pulse"></div>
                             </div>
 
                             <h2 className="text-xl md:text-3xl font-cinzel font-black text-white uppercase tracking-widest text-center drop-shadow-[0_5px_15px_rgba(0,0,0,1)]">
@@ -278,58 +276,56 @@ export const ShowmatchDetail: React.FC = () => {
                         </div>
 
                         {/* Center Stage - Boars are in the background image */}
-                        <div className="flex-1 flex items-center justify-center relative min-h-[400px]">
+                        <div className="flex-1 flex items-center justify-center relative min-h-[300px] md:min-h-[400px]">
 
-                            <div className="relative z-30 transform hover:scale-110 transition-transform duration-500 animate-breathing">
-                                {/* Intense glowing VS sign */}
-                                <div className="absolute inset-0 bg-[#ffd700] blur-[100px] opacity-20 animate-pulse"></div>
+                            <div className="relative z-30 transform hover:scale-110 transition-transform duration-500 animate-breathing flex items-center justify-center">
+                                {/* Intense glowing VS sign - Radial to avoid "box" effect */}
+                                <div className="absolute w-[150%] h-[150%] bg-[radial-gradient(circle,rgba(255,215,0,0.25)_0%,transparent_70%)] animate-pulse pointer-events-none"></div>
                                 <img
                                     src="/vs.png"
                                     alt="VS"
-                                    className="w-64 md:w-[450px] h-auto drop-shadow-[0_15px_40px_rgba(0,0,0,1)] relative z-10 select-none"
+                                    className="w-48 md:w-[450px] h-auto drop-shadow-[0_15px_40px_rgba(0,0,0,1)] relative z-10 select-none"
                                 />
                             </div>
                         </div>
 
                         {/* Outer P2 Container - Right Side */}
-                        <div className="flex flex-col items-center w-48 relative z-20 shrink-0 animate-float" style={{ animationDelay: '1s' }}>
+                        <div className="flex flex-col items-center w-40 md:w-56 relative z-20 shrink-0 animate-float" style={{ animationDelay: '1s' }}>
                             {/* Glowing Ornate P2 Frame */}
-                            <div className="relative w-40 h-40 md:w-64 md:h-64 mb-4 flex items-center justify-center">
-                                {/* Intense Radiating Glow */}
-                                <div className="absolute inset-0 bg-red-600/30 blur-[60px] animate-pulse"></div>
+                            <div className="relative w-36 h-36 md:w-64 md:h-64 mb-4 flex items-center justify-center">
+                                {/* Intense Radiating Glow - Radial to avoid "box" effect */}
+                                <div className="absolute inset-[-40%] bg-[radial-gradient(circle,rgba(220,38,38,0.3)_0%,transparent_70%)] animate-pulse"></div>
 
                                 {/* Ornate Frame Layer 1 - Outer Metallic Border */}
-                                <div className="absolute inset-0 ornate-frame animate-slow-spin-reverse shadow-[0_0_20px_rgba(255,69,0,0.6)]"
+                                <div className="absolute inset-0 ornate-frame animate-slow-spin-reverse"
                                     style={{
                                         background: 'linear-gradient(135deg, #7f1d1d 0%, #ef4444 50%, #7f1d1d 100%)',
-                                        padding: '4px'
+                                        padding: '4px',
+                                        filter: 'drop-shadow(0 0 15px rgba(220,38,38,0.8))'
                                     }}>
                                     {/* Inner Metallic Lining */}
                                     <div className="w-full h-full ornate-frame bg-[#1a0f0f] flex items-center justify-center"
-                                        style={{ border: '2px solid rgba(255,255,255,0.1)' }}>
+                                        style={{ border: '1px solid rgba(255,255,255,0.2)' }}>
                                     </div>
                                 </div>
 
                                 {/* Ornate Frame Layer 2 - Inner Glowing Border */}
-                                <div className="absolute inset-4 ornate-frame animate-slow-spin opacity-80"
+                                <div className="absolute inset-3 md:inset-5 ornate-frame animate-slow-spin opacity-90"
                                     style={{
                                         background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
                                         padding: '2px'
                                     }}>
-                                    <div className="w-full h-full ornate-frame bg-stone-900"></div>
+                                    <div className="w-full h-full ornate-frame bg-stone-950"></div>
                                 </div>
 
                                 {/* Circular Avatar in the middle */}
-                                <div className="absolute inset-8 rounded-full bg-stone-950 overflow-hidden flex items-center justify-center z-10 border-[6px] border-red-500/90 shadow-[inset_0_0_40px_rgba(0,0,0,1),0_0_30px_rgba(239,68,68,0.6)]">
+                                <div className="absolute inset-6 md:inset-10 rounded-full bg-stone-950 overflow-hidden flex items-center justify-center z-10 border-[4px] md:border-[6px] border-red-500/90 shadow-[inset_0_0_40px_rgba(0,0,0,1),0_0_30px_rgba(239,68,68,0.6)]">
                                     {p2Avatar ? (
                                         <img src={p2Avatar} alt={p2Name} className="w-full h-full object-cover scale-110" />
                                     ) : (
-                                        <div className="w-full h-full bg-stone-900 flex items-center justify-center text-red-600 font-black text-3xl font-cinzel">BS</div>
+                                        <div className="w-full h-full bg-stone-900 flex items-center justify-center text-red-600 font-black text-2xl md:text-3xl font-cinzel">BS</div>
                                     )}
                                 </div>
-
-                                {/* Decorative Red Sparkle Overlays */}
-                                <div className="absolute -inset-4 bg-[radial-gradient(circle,rgba(239,68,68,0.2)_0%,transparent_70%)] animate-pulse"></div>
                             </div>
 
                             <h2 className="text-xl md:text-3xl font-cinzel font-black text-white uppercase tracking-widest text-center drop-shadow-[0_5px_15px_rgba(0,0,0,1)]">
@@ -383,32 +379,29 @@ export const ShowmatchDetail: React.FC = () => {
                         </div>
 
                         {/* Metallic Twitch Button underneath */}
-                        <div className="flex justify-center mt-8">
+                        <div className="flex justify-center mt-4 md:mt-8">
                             {match.stream_url && (
                                 <a
                                     href={match.stream_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="relative inline-flex items-center justify-center gap-4 px-16 py-6 transition-all group overflow-hidden hover:scale-105 active:scale-95"
+                                    className="relative inline-flex items-center justify-center transition-all group overflow-hidden hover:scale-105 active:scale-95"
                                     style={{
-                                        width: '420px',
-                                        height: '110px',
+                                        width: '320px',
+                                        height: '80px',
                                         background: 'url("/vertransmision.png") no-repeat center center',
-                                        backgroundSize: '100% 100%',
+                                        backgroundSize: 'contain',
                                     }}
                                 >
-                                    {/* Lustre Animado Overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ornate-frame opacity-30"></div>
-
-                                    <div className="flex items-center gap-4 relative z-10">
-                                        <Twitch size={32} className="drop-shadow-[0_0_15px_#fff] text-white" />
-                                        <span className="font-cinzel font-black text-white text-xl uppercase tracking-[0.2em] drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">
+                                    <div className="flex items-center gap-3 relative z-10 pointer-events-none">
+                                        <Twitch size={24} className="drop-shadow-[0_0_10px_#fff] text-white" />
+                                        <span className="font-cinzel font-black text-white text-base md:text-lg uppercase tracking-[0.1em] drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">
                                             VER TRANSMISIÓN
                                         </span>
                                     </div>
 
-                                    {/* Subtle Ambient Resplandor */}
-                                    <div className="absolute inset-0 bg-purple-500/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    {/* Subtle Ambient Resplandor - Radial */}
+                                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(168,85,247,0.2)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                                 </a>
                             )}
                         </div>
