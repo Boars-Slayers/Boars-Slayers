@@ -26,7 +26,7 @@ export const FireParticles = () => {
                         value: "transparent",
                     },
                 },
-                fpsLimit: 120,
+                fpsLimit: 60, // Capped at 60 for consistency and performance
                 interactivity: {
                     events: {
                         onHover: {
@@ -37,7 +37,7 @@ export const FireParticles = () => {
                     },
                     modes: {
                         bubble: {
-                            distance: 250,
+                            distance: 200,
                             duration: 2,
                             opacity: 0,
                             size: 0,
@@ -47,7 +47,7 @@ export const FireParticles = () => {
                 },
                 particles: {
                     color: {
-                        value: ["#ffcc00", "#ff6600", "#ff3300", "#ff0000"],
+                        value: ["#ffffff", "#ffcc00", "#ff9900", "#ff6600", "#ff3300"], // Added white/bright yellow for 'hot' sparks
                     },
                     links: {
                         enable: false,
@@ -59,40 +59,52 @@ export const FireParticles = () => {
                             default: "out",
                         },
                         random: true,
-                        speed: { min: 1, max: 4 },
+                        speed: { min: 2, max: 6 }, // Faster, more erratic movement
                         straight: false,
+                        vibrate: false,
+                        warp: false,
                     },
                     number: {
                         density: {
                             enable: true,
                             area: 800,
                         },
-                        value: 100,
+                        value: 50, // Reduced count for performance
                     },
                     opacity: {
-                        value: { min: 0.1, max: 0.8 },
+                        value: { min: 0.1, max: 1 },
                         animation: {
                             enable: true,
-                            speed: 1,
+                            speed: 2,
                             sync: false,
                         }
                     },
                     shape: {
-                        type: "circle",
+                        type: "polygon", // Polygonal shape for 'spark' look
+                        options: {
+                            polygon: {
+                                sides: 3, // Triangles look like sharp sparks
+                            }
+                        }
                     },
                     size: {
-                        value: { min: 1, max: 6 },
+                        value: { min: 1, max: 4 },
                         animation: {
                             enable: true,
-                            speed: 3,
+                            speed: 5,
                             sync: false
                         }
                     },
-                    shadow: {
-                        blur: 15,
-                        color: "#ff3300",
-                        enable: true,
+                    rotate: {
+                        value: { min: 0, max: 360 },
+                        animation: {
+                            enable: true,
+                            speed: 30, // Fast spinning
+                            sync: false
+                        },
+                        direction: "random",
                     },
+                    // Removed shadow blur as it causes the main performance lag
                 },
                 detectRetina: true,
             }}
