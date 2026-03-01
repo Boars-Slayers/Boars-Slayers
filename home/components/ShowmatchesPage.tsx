@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Showmatch } from '../types';
 import { Swords, Calendar, Play, User } from 'lucide-react';
+import { Navbar } from './Navbar';
+import { Footer } from './Footer';
 
 const CountdownLabel: React.FC<{ scheduledTime: string }> = ({ scheduledTime }) => {
     const [timeLeft, setTimeLeft] = useState('');
@@ -56,14 +58,26 @@ export const ShowmatchesPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-stone-950 text-gray-200">
-            <main className="max-w-7xl mx-auto px-6 pt-32 pb-12">
-                <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-10 gap-4">
+        <div className="min-h-screen bg-stone-950 text-gray-200 font-sans selection:bg-gold-500/30 overflow-x-hidden relative">
+            <Navbar />
+
+            {/* Epic Background */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <img
+                    src="/fondoshowmatch.webp"
+                    alt="War Background"
+                    className="w-full h-full object-cover opacity-20 mix-blend-luminosity scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/90 to-stone-950/40"></div>
+            </div>
+
+            <main className="relative z-10 max-w-7xl mx-auto px-6 pt-32 pb-20">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6 text-center md:text-left">
                     <div>
-                        <h1 className="text-3xl font-serif font-bold text-white flex items-center gap-3">
-                            <Swords className="text-gold-500" /> Showmatchs de la Comunidad
+                        <h1 className="text-4xl md:text-6xl font-serif font-black text-white flex items-center justify-center md:justify-start gap-4 uppercase tracking-tight">
+                            <Swords className="text-gold-500 w-10 h-10 md:w-16 md:h-16" /> Showmatchs
                         </h1>
-                        <p className="text-stone-400 mt-2">Duelos épicos organizados por Boars Slayers.</p>
+                        <p className="text-gold-500/60 mt-3 font-serif italic text-lg md:text-xl">Duelos de gloria en la arena de Boars Slayers</p>
                     </div>
                 </div>
 
@@ -81,64 +95,68 @@ export const ShowmatchesPage: React.FC = () => {
                             <div
                                 key={match.id}
                                 onClick={() => navigate(`/showmatchs/${match.id}`)}
-                                className="bg-stone-900/50 border border-gold-600/20 rounded-2xl overflow-hidden hover:border-gold-500/50 transition-all group cursor-pointer"
+                                className="bg-stone-900/40 backdrop-blur-md border border-white/5 rounded-3xl overflow-hidden hover:border-gold-500/30 transition-all group cursor-pointer shadow-2xl relative"
                             >
-                                <div className="p-8">
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div className="flex items-center gap-2 text-xs font-bold text-stone-500 uppercase tracking-widest">
-                                            <Calendar size={14} />
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold-500/20 to-transparent group-hover:via-gold-500/50 transition-all"></div>
+
+                                <div className="p-8 md:p-10">
+                                    <div className="flex justify-between items-start mb-8">
+                                        <div className="flex items-center gap-3 text-xs font-black text-stone-500 uppercase tracking-[0.2em]">
+                                            <Calendar size={14} className="text-gold-600" />
                                             {new Date(match.scheduled_time).toLocaleString()}
                                         </div>
-                                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border
-                                            ${match.status === 'live' ? 'bg-red-500/20 text-red-500 border-red-500/30 animate-pulse' :
-                                                match.status === 'completed' ? 'bg-stone-800 text-stone-400 border-stone-700' :
-                                                    'bg-blue-500/20 text-blue-400 border-blue-500/30'}
+                                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border backdrop-blur-xl
+                                            ${match.status === 'live' ? 'bg-red-600/20 text-red-500 border-red-500/50 animate-pulse' :
+                                                match.status === 'completed' ? 'bg-stone-800/40 text-stone-400 border-stone-700' :
+                                                    'bg-gold-600/20 text-gold-500 border-gold-500/30'}
                                         `}>
-                                            {match.status === 'live' ? 'En Vivo' :
+                                            {match.status === 'live' ? '🔴 En Vivo' :
                                                 match.status === 'completed' ? 'Finalizado' : <CountdownLabel scheduledTime={match.scheduled_time} />}
                                         </div>
                                     </div>
 
-                                    <h2 className="text-2xl font-serif font-bold text-white mb-8 text-center">{match.title}</h2>
+                                    <h2 className="text-3xl md:text-4xl font-serif font-black text-white mb-10 text-center uppercase tracking-tight group-hover:text-gold-400 transition-colors drop-shadow-lg">
+                                        {match.title}
+                                    </h2>
 
                                     <div className="flex items-center justify-between gap-4 relative">
                                         {/* Player 1 */}
-                                        <div className="flex-1 flex flex-col items-center">
-                                            <div className="relative w-24 h-24 mb-4">
-                                                <div className="absolute inset-0 rounded-full bg-gold-600/10 blur-xl"></div>
-                                                <div className="relative w-full h-full rounded-full border-2 border-stone-800 bg-stone-950 overflow-hidden">
+                                        <div className="flex-1 flex flex-col items-center group/p1">
+                                            <div className="relative w-28 h-28 md:w-32 md:h-32 mb-4 transform transition-all group-hover:scale-110">
+                                                <div className="absolute inset-0 rounded-full bg-blue-600/10 blur-2xl group-hover/p1:bg-blue-600/30 transition-colors"></div>
+                                                <div className="relative w-full h-full rounded-full border-4 border-stone-800 bg-stone-950 overflow-hidden z-10 p-1">
                                                     {(match as any).p1?.avatar_url ? (
-                                                        <img src={(match as any).p1.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                        <img src={(match as any).p1.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-stone-700"><User size={40} /></div>
+                                                        <div className="w-full h-full flex items-center justify-center text-stone-700 bg-stone-900 rounded-full"><User size={40} /></div>
                                                     )}
                                                 </div>
                                             </div>
-                                            <span className="text-lg font-bold text-white text-center">{(match as any).p1?.username || match.p1_name || 'TBD'}</span>
+                                            <span className="text-xl font-serif font-black text-white text-center tracking-wide">{(match as any).p1?.username || match.p1_name || 'TBD'}</span>
                                         </div>
 
-                                        <div className="text-4xl font-serif font-black text-stone-800 italic absolute left-1/2 -top-4 -translate-x-1/2">VS</div>
+                                        <div className="text-5xl font-serif font-black text-stone-800 italic absolute left-1/2 top-4 md:top-8 -translate-x-1/2 opacity-50 select-none">VS</div>
 
                                         {/* Player 2 */}
-                                        <div className="flex-1 flex flex-col items-center">
-                                            <div className="relative w-24 h-24 mb-4">
-                                                <div className="absolute inset-0 rounded-full bg-gold-600/10 blur-xl"></div>
-                                                <div className="relative w-full h-full rounded-full border-2 border-stone-800 bg-stone-950 overflow-hidden">
+                                        <div className="flex-1 flex flex-col items-center group/p2">
+                                            <div className="relative w-28 h-28 md:w-32 md:h-32 mb-4 transform transition-all group-hover:scale-110">
+                                                <div className="absolute inset-0 rounded-full bg-red-600/10 blur-2xl group-hover/p2:bg-red-600/30 transition-colors"></div>
+                                                <div className="relative w-full h-full rounded-full border-4 border-stone-800 bg-stone-950 overflow-hidden z-10 p-1">
                                                     {(match as any).p2?.avatar_url ? (
-                                                        <img src={(match as any).p2.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                        <img src={(match as any).p2.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-stone-700"><User size={40} /></div>
+                                                        <div className="w-full h-full flex items-center justify-center text-stone-700 bg-stone-900 rounded-full"><User size={40} /></div>
                                                     )}
                                                 </div>
                                             </div>
-                                            <span className="text-lg font-bold text-white text-center">{(match as any).p2?.username || match.p2_name || 'TBD'}</span>
+                                            <span className="text-xl font-serif font-black text-white text-center tracking-wide">{(match as any).p2?.username || match.p2_name || 'TBD'}</span>
                                         </div>
                                     </div>
 
                                     {match.status === 'completed' && match.result_score && (
-                                        <div className="mt-8 flex flex-col items-center">
-                                            <div className="text-[10px] text-stone-500 uppercase tracking-[0.2em] font-bold mb-2">Resultado Final</div>
-                                            <div className="text-3xl font-mono font-black text-gold-500 bg-gold-500/5 px-6 py-2 rounded-xl border border-gold-500/10">{match.result_score}</div>
+                                        <div className="mt-10 flex flex-col items-center">
+                                            <div className="text-[10px] text-stone-500 uppercase tracking-[0.4em] font-black mb-2">Resultado Final</div>
+                                            <div className="text-4xl font-mono font-black text-gold-500 bg-gold-500/5 px-8 py-3 rounded-2xl border border-gold-500/20 shadow-inner">{match.result_score}</div>
                                         </div>
                                     )}
 
@@ -149,17 +167,11 @@ export const ShowmatchesPage: React.FC = () => {
                                     )}
 
                                     {match.stream_url && match.status !== 'completed' && (
-                                        <div className="mt-8">
-                                            <a
-                                                href={match.stream_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-600/20"
-                                            >
+                                        <div className="mt-10">
+                                            <div className="w-full py-4 bg-[#6441a5] hover:bg-[#7d5bbe] text-white rounded-2xl font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all shadow-xl shadow-purple-900/40 group-hover:scale-[1.02]">
                                                 <Play size={20} fill="currentColor" />
                                                 Ver Transmisión
-                                            </a>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -168,6 +180,7 @@ export const ShowmatchesPage: React.FC = () => {
                     </div>
                 )}
             </main>
+            <Footer />
         </div>
     );
 };
