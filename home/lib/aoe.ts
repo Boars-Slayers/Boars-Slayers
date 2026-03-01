@@ -3,62 +3,94 @@ export interface PlayerStats {
     name: string;
     elo1v1: number | null;
     eloTG: number | null;
-    winRate1v1: number | null; // Percentage
+    winRate1v1: number | null;
     gamesPlayed: number;
-    streak: number; // positive for win, negative for loss
+    streak: number;
+    rank: number | null;
+    debug?: any;
 }
 
 import { supabase } from './supabase';
 
-// Attempts to use available APIs (aoe2companion.com, etc)
-
-export const fetchPlayerStats = async (steamId: string): Promise<PlayerStats | null> => {
-    let cleanId = steamId.trim();
-
-    if (cleanId.includes('steamcommunity.com')) {
-        const matches = cleanId.match(/\/profiles\/(\d{17})/);
-        if (matches && matches[1]) {
-            cleanId = matches[1];
-        } else {
-            return null;
-        }
-    }
-
-    if (!/^\d+$/.test(cleanId)) return null;
+/**
+ * Obtiene las estadísticas usando el ID numérico de AoE2 Companion.
+ */
+export const fetchPlayerStats = async (steamId: string, aoeCompanionId: string): Promise<PlayerStats | null> => {
+    if (!aoeCompanionId) return null;
 
     try {
+        console.log("🔍 Pidiendo estadísticas al Oráculo para:", aoeCompanionId);
+
         const { data, error } = await supabase.functions.invoke('proxy-match-history', {
-            body: { steamId: cleanId }
+            body: { profileId: aoeCompanionId, action: 'stats' }
         });
 
-        if (error || !data?.stats) {
-            console.warn("Failed to fetch AoE stats via proxy:", error);
+        if (error) {
+            console.error(`❌ Error en Edge Function:`, error);
             return null;
         }
 
-        const { stats } = data;
+        const stats = data?.stats;
+
+        if (!stats) {
+            console.error("❌ La respuesta no contiene estadísticas válidas");
+            return null;
+        }
+
+        console.log("📦 Datos recibidos del Oráculo:", stats);
+
+        // --- FALLBACK DE EMERGENCIA (CLIENT-SIDE PARSING) ---
+        // Si la función en la nube falló al parsear (porque el regex es viejo),
+        // lo hacemos aquí mismo en el navegador usando los datos RAW que la nube siempre envía.
+
+        let finalElo1v1 = stats.elo1v1;
+        let finalEloTG = stats.eloTG;
+        let finalRank = stats.rank;
+        let finalWinRate = stats.winRate;
+
+        if (finalElo1v1 === null && stats.debug?.raw1v1) {
+            const raw = stats.debug.raw1v1;
+            const eloMatch = raw.match(/\((\d+)\)/);
+            if (eloMatch) finalElo1v1 = parseInt(eloMatch[1]);
+
+            const rankMatch = raw.match(/Rank\s#(\d+)/);
+            if (rankMatch) finalRank = parseInt(rankMatch[1]);
+
+            const winMatch = raw.match(/(\d+)%\swinrate/);
+            if (winMatch) finalWinRate = parseInt(winMatch[1]);
+        }
+
+        if (finalEloTG === null && stats.debug?.rawTG) {
+            const rawTG = stats.debug.rawTG;
+            const eloMatchTG = rawTG.match(/\((\d+)\)/);
+            if (eloMatchTG) finalEloTG = parseInt(eloMatchTG[1]);
+        }
 
         return {
-            steamId: cleanId,
-            name: stats.name,
-            elo1v1: stats.elo1v1,
-            eloTG: stats.eloTG,
-            winRate1v1: stats.winRate,
-            gamesPlayed: stats.gamesPlayed,
-            streak: 0 // No clear way to scrape streak easily from main profile page without more parsing
+            steamId: steamId || '',
+            name: stats.name || "Desconocido",
+            elo1v1: finalElo1v1,
+            eloTG: finalEloTG,
+            winRate1v1: finalWinRate,
+            gamesPlayed: stats.gamesPlayed || 0,
+            streak: 0,
+            rank: finalRank,
+            debug: stats.debug
         };
 
     } catch (error) {
-        console.warn("Failed to fetch AoE stats:", error);
+        console.error("Error fatal al obtener stats:", error);
         return null;
     }
 };
 
 /**
- * Fetches stats and saves them to Supabase to avoid hitting the API too often.
+ * Sincroniza y GUARDA en la base de datos de forma persistente.
  */
-export const syncPlayerStats = async (profileId: string, steamId: string) => {
-    const stats = await fetchPlayerStats(steamId);
+export const syncPlayerStats = async (profileId: string, steamId: string, aoeCompanionId: string) => {
+    if (!aoeCompanionId) return null;
+
+    const stats = await fetchPlayerStats(steamId, aoeCompanionId);
     if (!stats) return null;
 
     const { error } = await supabase
@@ -67,50 +99,76 @@ export const syncPlayerStats = async (profileId: string, steamId: string) => {
             elo_1v1: stats.elo1v1,
             elo_tg: stats.eloTG,
             win_rate_1v1: stats.winRate1v1,
-            games_played: stats.gamesPlayed,
+            rank_1v1: stats.rank,
             last_stats_update: new Date().toISOString()
         })
         .eq('id', profileId);
 
-    if (error) console.error('Error saving stats to Supabase:', error);
+    if (error) console.error('Error al persistir en Supabase:', error);
     return stats;
 };
 
-export const fetchMatchHistory = async (steamId: string, _count: number = 10): Promise<import('../types').Match[]> => {
+export const fetchMatchHistory = async (_steamId: string, _c: number, aoeCompanionId: string) => {
+    if (!aoeCompanionId) return [];
+
+    // --- PRIORIDAD 1: Tu infraestructura (Supabase) ---
     try {
         const { data, error } = await supabase.functions.invoke('proxy-match-history', {
-            body: { steamId }
+            body: { profileId: aoeCompanionId, action: 'matches' }
         });
 
-        if (error) {
-            console.error('Edge Function Error:', error);
-            return [];
+        if (!error && data?.matches && data.matches.length > 0) {
+            console.log(`✅ Batallas [ID: ${aoeCompanionId}] OK (Supabase)`);
+            return data.matches;
         }
+        if (error) console.error(`❌ Fallo en Supabase (ID: ${aoeCompanionId}):`, error);
+    } catch (e) { /* Fallback automático */ }
 
-        return data?.matches || [];
-    } catch (error) {
-        console.warn(`Failed to fetch matches for ${steamId}`, error);
-        return [];
+    const officialUrl = `https://aoe-api.worldsedgelink.com/community/leaderboard/getActualMatchHistory?title=age2&profile_ids=%5B${aoeCompanionId}%5D`;
+
+    // Configuración de proxies más robustos como respaldo
+    const proxyConfigs = [
+        {
+            name: 'AllOrigins',
+            url: `https://api.allorigins.win/get?url=${encodeURIComponent(officialUrl)}`,
+            isJsonWrapper: true
+        },
+        {
+            name: 'CodeTabs',
+            url: `https://api.codetabs.com/v1/proxy?quest=${officialUrl}`,
+            isJsonWrapper: false
+        }
+    ];
+
+    for (const config of proxyConfigs) {
+        try {
+            console.log(`⚔️ Batallas: Intentando vía ${config.name}...`);
+            const response = await fetch(config.url);
+
+            if (response.ok) {
+                const rawData = await response.json();
+                const data = config.isJsonWrapper ? JSON.parse(rawData.contents) : rawData;
+
+                if (data.result && data.result.matchHistoryStats) {
+                    console.log(`✅ ${config.name} respondió con éxito.`);
+                    return data.result.matchHistoryStats.map((m: any) => ({
+                        match_id: m.id,
+                        name: m.description || "Invasión Bárbara",
+                        started: m.completiontime,
+                        ranked: m.matchtype_id === 1,
+                        players: (m.matchhistoryreportresults || []).map((r: any) => ({
+                            profile_id: r.profile_id,
+                            result: r.resulttype === 1 ? 1 : 0
+                        }))
+                    }));
+                }
+            }
+        } catch (error) {
+            console.warn(`⚠️ ${config.name} no pudo obtener los datos.`);
+        }
     }
+
+    return [];
 };
 
-export const getClanMatches = async (members: { steamId?: string }[]): Promise<import('../types').Match[]> => {
-    const allMatches: import('../types').Match[] = [];
-    const validMembers = members.filter(m => m.steamId);
-
-    const promises = validMembers.map(m => fetchMatchHistory(m.steamId!, 10));
-    const results = await Promise.all(promises);
-
-    results.forEach(matches => allMatches.push(...matches));
-
-    const uniqueMatches = Array.from(new Map(allMatches.map(m => [m.match_id, m])).values());
-
-    return uniqueMatches.filter(_match => {
-        // If we don't have player details from the scraper, we might need to assume it's a clan match if we found it through a member
-        return true;
-    }).sort(() => {
-        // Fallback if started/finished are not available (scraper returns 0 usually)
-        return 0;
-    });
-};
-
+export const getClanMatches = async (_m: any) => [];

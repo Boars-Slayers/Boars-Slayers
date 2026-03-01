@@ -1,142 +1,131 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
-    if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders });
+// Usamos EXACTAMENTE el PROJECT_URL de tu script de referencia
+const PROJECT_URL = "https://github.com/jesus18112003/AoEDash";
+
+const fetchFromAPI = async (profileId: string, leaderboardId: number) => {
+    const url = `https://data.aoe2companion.com/api/nightbot/rank?profile_id=${profileId}&leaderboard_id=${leaderboardId}`;
+    try {
+        const res = await fetch(url, { headers: { "User-Agent": PROJECT_URL } });
+        if (!res.ok) return { error: `HTTP ${res.status}`, raw: "" };
+
+        let text = await res.text();
+        // Limpiar el texto de comillas y espacios raros
+        text = text.trim().replace(/\u00A0/g, " ").replace(/^"|"$/g, "");
+
+        // Intentar extraer ELO: "Nombre (1234)"
+        const eloMatch = text.match(/\(( \d+ | \d+ )\)/) || text.match(/\((\d+)\)/);
+        const elo = eloMatch ? parseInt(eloMatch[1]) : null;
+
+        // Intentar extraer Rank: "Rank #123"
+        const rankMatch = text.match(/Rank\s#(\d+)/);
+        const rank = rankMatch ? parseInt(rankMatch[1]) : null;
+
+        // Intentar extraer Winrate: "12% winrate"
+        const winrateMatch = text.match(/(\d+)%\swinrate/);
+        const winrate = winrateMatch ? parseInt(winrateMatch[1]) : null;
+
+        // Intentar extraer Nombre: Todo antes del primer '('
+        let name = "Desconocido";
+        if (text.includes('(')) {
+            name = text.split('(')[0].trim().replace(/^\?+\s*/, "");
+        }
+
+        if (elo !== null || rank !== null) {
+            return {
+                data: {
+                    name: name,
+                    elo: elo,
+                    rank: rank,
+                    winrate: winrate
+                },
+                raw: text
+            };
+        }
+
+        return { error: "Formato no reconocido", raw: text };
+    } catch (e) {
+        return { error: e.message, raw: "" };
     }
+};
+
+const fetchMatches = async (profileId: string) => {
+    // Oficial World's Edge link API
+    const url = `https://aoe-api.worldsedgelink.com/community/leaderboard/getActualMatchHistory?title=age2&profile_ids=%5B${profileId}%5D`;
 
     try {
-        const { steamId } = await req.json();
+        const res = await fetch(url, { headers: { "User-Agent": PROJECT_URL } });
+        if (!res.ok) return { error: `HTTP ${res.status}` };
 
-        if (!steamId) {
-            throw new Error('Missing steamId');
+        const data = await res.json();
+
+        // Mapeamos el formato oficial al formato simplificado que usa el clan
+        if (data.result && data.result.matchHistoryStats) {
+            const matches = data.result.matchHistoryStats.map((m: any) => ({
+                match_id: m.id,
+                name: m.description || "Batalla Sangrienta",
+                started: m.completiontime,
+                ranked: m.matchtype_id === 1,
+                players: (m.matchhistoryreportresults || []).map((r: any) => ({
+                    profile_id: r.profile_id,
+                    result: r.resulttype === 1 ? 1 : 0
+                }))
+            }));
+            return { data: matches };
         }
 
-        console.log(`Fetching profile for Steam ID: ${steamId}`);
+        return { data: [] };
+    } catch (e) {
+        return { error: e.message };
+    }
+};
 
-        // 1. Resolve Profile ID from Steam ID via Search Redirect
-        const searchUrl = `https://www.aoe2insights.com/?q=${steamId}`;
-        const searchRes = await fetch(searchUrl, {
-            redirect: 'follow',
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-        });
+serve(async (req) => {
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-        let finalUrl = searchRes.url;
-        console.log(`Resolved URL: ${finalUrl}`);
+    try {
+        const { profileId, action } = await req.json();
+        if (!profileId) throw new Error("Missing profileId");
 
-        let profileId = null;
-        const profileIdMatch = finalUrl.match(/\/user\/(\d+)/);
+        console.log(`[ORACLE] Iniciando consulta para ID: ${profileId}, Acción: ${action || 'stats'}`);
 
-        if (profileIdMatch) {
-            profileId = profileIdMatch[1];
-        } else {
-            // If No redirect, parse the results page
-            console.log("No direct redirect, trying to parse search results...");
-            const searchHtml = await searchRes.text();
-            const searchDoc = new DOMParser().parseFromString(searchHtml, "text/html");
-            // Find first user link in search results
-            const firstUserLink = searchDoc?.querySelector('a[href*="/user/"]');
-            const href = firstUserLink?.getAttribute('href');
-            if (href) {
-                const match = href.match(/\/user\/(\d+)/);
-                if (match) profileId = match[1];
-            }
-        }
-
-        if (!profileId) {
-            console.log("Could not resolve specific user profile from search.");
-            return new Response(JSON.stringify({ error: 'User not found', matches: [] }), {
+        if (action === 'matches') {
+            const matchesRes = await fetchMatches(profileId);
+            return new Response(JSON.stringify({ profileId, matches: matchesRes.data || [], error: matchesRes.error }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
         }
 
-        const profileUrl = `https://www.aoe2insights.com/user/${profileId}/`;
+        // Por defecto: Stats
+        const [res1v1, resTG] = await Promise.all([
+            fetchFromAPI(profileId, 3), // 1v1
+            fetchFromAPI(profileId, 4)  // TG
+        ]);
 
-        // 2. Fetch Profile Page for Stats
-        const profileRes = await fetch(profileUrl);
-        const profileHtml = await profileRes.text();
-        const profileDoc = new DOMParser().parseFromString(profileHtml, "text/html");
-
-        const stats: any = {
-            name: profileDoc?.querySelector("h1 strong")?.textContent?.trim() || "Unknown",
-            elo1v1: null,
-            eloTG: null,
-            gamesPlayed: 0,
-            winRate: null
+        const stats = {
+            name: res1v1.data?.name || resTG.data?.name || "Desconocido",
+            elo1v1: res1v1.data?.elo || null,
+            eloTG: resTG.data?.elo || null,
+            winRate: res1v1.data?.winrate || resTG.data?.winrate || 0,
+            rank: res1v1.data?.rank || null,
+            debug: {
+                raw1v1: res1v1.raw,
+                rawTG: resTG.raw,
+                err1v1: res1v1.error,
+                errTG: resTG.error
+            }
         };
 
-        // Extract ELOs from cards
-        const ratingCards = profileDoc?.querySelectorAll(".tile");
-        if (ratingCards) {
-            for (const card of ratingCards) {
-                const label = card.querySelector("strong")?.textContent?.trim() || "";
-                const ratingText = card.querySelector("small")?.textContent || "";
-                const ratingMatch = ratingText.match(/Rating (\d+)/);
-                const rating = ratingMatch ? parseInt(ratingMatch[1]) : null;
-
-                if (label.includes("1v1 RM")) stats.elo1v1 = rating;
-                else if (label.includes("Team RM")) stats.eloTG = rating;
-            }
-        }
-
-        // Extract Summary Stats (Games Played and Win Rate)
-        // Usually found in the "About" paragraph or summary text
-        const aboutText = profileDoc?.querySelector(".mb-5 p")?.textContent || "";
-        const gamesMatch = aboutText.match(/(\d+) matches/);
-        if (gamesMatch) stats.gamesPlayed = parseInt(gamesMatch[1]);
-
-        const winRateMatch = aboutText.match(/win rate of ([\d.]+)%/);
-        if (winRateMatch) stats.winRate = parseFloat(winRateMatch[1]);
-
-        // 3. Fetch Match History
-        const matchesUrl = `https://www.aoe2insights.com/user/${profileId}/matches/`;
-        const matchesRes = await fetch(matchesUrl);
-        const matchesHtml = await matchesRes.text();
-
-        const matchesDoc = new DOMParser().parseFromString(matchesHtml, "text/html");
-        const rows = matchesDoc?.querySelectorAll("table.table tbody tr");
-
-        const matches = [];
-        if (rows) {
-            for (const row of rows) {
-                try {
-                    const mapName = row.querySelector("td:nth-child(2) a")?.textContent?.trim() || "Unknown Map";
-                    const dateText = row.querySelector("td:nth-child(5)")?.textContent?.trim() || "";
-                    const resultText = row.querySelector("td .badge")?.textContent?.trim() || "";
-                    const isVictory = resultText.toLowerCase().includes("won");
-                    const duration = row.querySelector("td:nth-child(3)")?.textContent?.trim() || "";
-                    const type = row.querySelector("td:nth-child(4)")?.textContent?.trim() || "";
-                    const matchLink = row.querySelector("td:nth-child(2) a")?.getAttribute("href");
-                    const matchId = matchLink?.match(/\/match\/(\d+)/)?.[1] || crypto.randomUUID();
-
-                    matches.push({
-                        match_id: matchId,
-                        name: mapName,
-                        ranked: type.toLowerCase().includes("ranked"),
-                        result: isVictory ? 'Victory' : 'Defeat',
-                        duration,
-                        type,
-                        date_text: dateText
-                    });
-                } catch (err) {
-                    console.error("Error parsing match row", err);
-                }
-            }
-        }
-
-        return new Response(JSON.stringify({ profileId, stats, matches }), {
+        return new Response(JSON.stringify({ profileId, stats }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
-    } catch (error) {
+    } catch (error: any) {
         return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },

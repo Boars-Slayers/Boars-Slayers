@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { LogIn, LogOut, User, Settings, Edit } from 'lucide-react';
+import { LogIn, LogOut, User, Settings, Edit, Crown, Swords } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ProfileEditor } from './ProfileEditor';
 import { useAuth } from '../AuthContext';
+
+import { Notifications } from './Notifications';
 
 export const AuthStatus: React.FC = () => {
     const { user, profile, loading, login, logout, refreshProfile } = useAuth();
@@ -26,6 +28,7 @@ export const AuthStatus: React.FC = () => {
     return (
         <>
             <div className="flex items-center gap-4">
+                <Notifications />
                 <div className="text-right hidden sm:block">
                     <p className="text-gray-200 font-bold text-sm tracking-wide">{profile?.username || user.email}</p>
                     <p className="text-xs uppercase tracking-widest text-gold-500 font-bold">
@@ -54,12 +57,28 @@ export const AuthStatus: React.FC = () => {
                             >
                                 <Edit size={16} /> Editar Perfil
                             </button>
+                            {profile?.role === 'web_master' && (
+                                <button
+                                    onClick={() => navigate('/master-panel')}
+                                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-purple-400 hover:bg-purple-900/20 rounded transition-colors text-left"
+                                >
+                                    <Crown size={16} /> Master Panel
+                                </button>
+                            )}
                             {profile?.role === 'admin' && (
                                 <button
                                     onClick={() => navigate('/admin')}
                                     className="flex items-center gap-2 w-full px-3 py-2 text-sm text-emerald-400 hover:bg-emerald-900/20 rounded transition-colors text-left"
                                 >
                                     <Settings size={16} /> Admin Panel
+                                </button>
+                            )}
+                            {profile?.role === 'member' && (
+                                <button
+                                    onClick={() => navigate('/member-panel')}
+                                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-blue-400 hover:bg-blue-900/20 rounded transition-colors text-left"
+                                >
+                                    <Swords size={16} /> Member Panel
                                 </button>
                             )}
                             <div className="h-px bg-stone-800 my-1"></div>

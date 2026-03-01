@@ -32,6 +32,7 @@ export const UserCreator: React.FC<UserCreatorProps> = ({ onClose, onUserCreated
             const { error } = await supabase
                 .from('profiles')
                 .insert([{
+                    id: crypto.randomUUID(),
                     username: formData.username,
                     contact_email: formData.email,
                     steam_id: formData.steam_id,

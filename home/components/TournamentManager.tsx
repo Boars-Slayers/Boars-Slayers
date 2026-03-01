@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Tournament } from '../types';
-import { Trophy, Calendar, Users, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, X, Settings } from 'lucide-react';
+import { Trophy, Calendar, Users, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, X, Wand2 } from 'lucide-react';
 import { MatchModal } from './tournaments/MatchModal';
+import { MatchGridAdmin } from './tournaments/MatchGridAdmin';
 
 export const TournamentManager: React.FC = () => {
     const [uploading, setUploading] = useState(false);
@@ -20,6 +21,10 @@ export const TournamentManager: React.FC = () => {
     const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
     const [editingMatch, setEditingMatch] = useState<any>(null);
 
+    // Admin management state
+    const [admins, setAdmins] = useState<any[]>([]);
+    const [adminSearch, setAdminSearch] = useState('');
+
     useEffect(() => {
         fetchTournaments();
     }, []);
@@ -27,7 +32,9 @@ export const TournamentManager: React.FC = () => {
     useEffect(() => {
         if (isEditing && currentTournament.id) {
             fetchParticipants(currentTournament.id);
+            fetchParticipants(currentTournament.id);
             fetchMatches(currentTournament.id);
+            fetchAdmins(currentTournament.id);
             fetchProfiles();
         }
     }, [isEditing, currentTournament.id]);
@@ -90,6 +97,19 @@ export const TournamentManager: React.FC = () => {
         }
     };
 
+    const fetchAdmins = async (tournamentId: string) => {
+        const { data, error } = await supabase
+            .from('tournament_admins')
+            .select('*, user:profiles(id, username, avatar_url)')
+            .eq('tournament_id', tournamentId);
+
+        if (error) {
+            console.error('Error fetching admins:', error);
+        } else {
+            setAdmins(data || []);
+        }
+    };
+
     const addParticipant = async (user_id: string) => {
         if (!currentTournament.id) return;
 
@@ -127,6 +147,143 @@ export const TournamentManager: React.FC = () => {
             alert('Error al eliminar el participante');
         } else {
             setParticipants(participants.filter(p => p.id !== participantId));
+        }
+    };
+
+    const handleGenerateFixture = async () => {
+        if (!participants || participants.length < 2) {
+            alert('Se necesitan al menos 2 participantes para generar el fixture.');
+            return;
+        }
+
+        if (!confirm('Esto generará todos los partidos de la liga. Si ya existen partidos, se recomienda borrarlos primero. ¿Continuar?')) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Round Robin Algorithm (Circle Method)
+            const players = participants.map(p => p.user_id);
+            if (players.length % 2 !== 0) {
+                players.push(null); // Dummy player for odd number of teams logic
+            }
+
+            const totalRounds = players.length - 1;
+            const matchesPerRound = players.length / 2;
+            const newMatches = [];
+
+            let rotation = [...players];
+
+            for (let round = 0; round < totalRounds; round++) {
+                for (let match = 0; match < matchesPerRound; match++) {
+                    const p1 = rotation[match];
+                    const p2 = rotation[rotation.length - 1 - match];
+
+                    if (p1 && p2) { // Determine real match vs Bye
+                        newMatches.push({
+                            tournament_id: currentTournament.id,
+                            round: round + 1,
+                            match_number: match + 1,
+                            player1_id: p1,
+                            player2_id: p2,
+                            status: 'scheduled'
+                        });
+                    }
+                }
+
+                // Rotate array for next round (keep first index fixed, rotate the rest)
+                const fixed = rotation[0];
+                const tail = rotation.slice(1);
+                tail.unshift(tail.pop()!);
+                rotation = [fixed, ...tail];
+            }
+
+            const { error } = await supabase.from('matches').insert(newMatches);
+            if (error) throw error;
+
+            alert('Fixture generado correctamente!');
+            fetchMatches(currentTournament.id!);
+
+        } catch (error) {
+            console.error('Error generating fixture:', error);
+            alert('Error al generar el fixture.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const addAdmin = async (user_id: string) => {
+        if (!currentTournament.id) return;
+
+        const { error } = await supabase
+            .from('tournament_admins')
+            .insert([{
+                tournament_id: currentTournament.id,
+                user_id
+            }]);
+
+        if (error) {
+            console.error('Error adding admin:', error);
+            alert('Error al agregar el administrador');
+        } else {
+            fetchAdmins(currentTournament.id);
+            setAdminSearch('');
+        }
+    };
+
+    const removeAdmin = async (adminId: string) => {
+        if (!confirm('¿Quitar permisos de administrador a este usuario?')) return;
+
+        const { error } = await supabase
+            .from('tournament_admins')
+            .delete()
+            .eq('id', adminId);
+
+        if (error) {
+            console.error('Error removing admin:', error);
+            alert('Error al eliminar el administrador');
+        } else {
+            setAdmins(admins.filter(a => a.id !== adminId));
+        }
+    };
+
+    const handleDeleteMatch = async (matchId: string) => {
+        if (!confirm('¿Estás seguro de eliminar este partido?')) return;
+
+        const { error } = await supabase
+            .from('matches')
+            .delete()
+            .eq('id', matchId);
+
+        if (error) {
+            console.error('Error deleting match:', error);
+            alert('Error al eliminar el partido');
+        } else {
+            setMatches(matches.filter(m => m.id !== matchId));
+        }
+    };
+
+    const handleDeleteAllMatches = async () => {
+        if (!confirm('¿ESTÁS SEGURO? Esto eliminará TODOS los partidos y resultados del torneo. Esta acción es irreversible.')) return;
+
+        // Double confirmation for safety
+        if (!confirm('Confirma nuevamente: Se borrarán TODOS los partidos de este torneo. ¿Continuar?')) return;
+
+        setLoading(true);
+        try {
+            const { error } = await supabase
+                .from('matches')
+                .delete()
+                .eq('tournament_id', currentTournament.id);
+
+            if (error) throw error;
+
+            setMatches([]);
+        } catch (error) {
+            console.error('Error deleting all matches:', error);
+            alert('Error al eliminar los partidos');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -483,41 +640,129 @@ export const TournamentManager: React.FC = () => {
                                     {/* Add Participant Search */}
                                     <div className="space-y-4">
                                         <p className="text-sm font-medium text-stone-400 mb-2 uppercase tracking-widest text-[10px]">Agregar Invitado</p>
-                                        <div className="relative">
+                                        <div className="relative group">
                                             <input
                                                 type="text"
                                                 value={memberSearch}
                                                 onChange={e => setMemberSearch(e.target.value)}
                                                 placeholder="Buscar miembro del clan..."
-                                                className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-gold-500 outline-none text-sm"
+                                                className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-gold-500 outline-none text-sm peer"
                                             />
-                                            {memberSearch && (
-                                                <div className="absolute top-full left-0 right-0 mt-2 bg-stone-900 border border-stone-800 rounded-xl shadow-2xl overflow-hidden z-20 max-h-48 overflow-y-auto">
-                                                    {allProfiles
-                                                        .filter(u => u.username.toLowerCase().includes(memberSearch.toLowerCase()))
-                                                        .filter(u => !participants.some(p => p.user_id === u.id))
-                                                        .slice(0, 5)
-                                                        .map(u => (
-                                                            <button
-                                                                key={u.id}
-                                                                onClick={() => addParticipant(u.id)}
-                                                                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-stone-800 text-stone-300 text-sm transition-colors text-left"
-                                                            >
-                                                                <div className="w-7 h-7 rounded-full overflow-hidden border border-stone-700 flex-shrink-0">
-                                                                    {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-stone-800" />}
-                                                                </div>
-                                                                {u.username}
-                                                                <Plus size={14} className="ml-auto text-gold-500" />
-                                                            </button>
-                                                        ))
-                                                    }
-                                                    {allProfiles.filter(u => u.username.toLowerCase().includes(memberSearch.toLowerCase()) && !participants.some(p => p.user_id === u.id)).length === 0 && (
-                                                        <div className="p-4 text-center text-stone-600 text-xs italic">No se encontraron miembros para invitar</div>
-                                                    )}
-                                                </div>
-                                            )}
+                                            {/* Show dropdown on focus or if input exists */}
+                                            <div className="hidden peer-focus:block hover:block absolute top-full left-0 right-0 mt-2 bg-stone-900 border border-stone-800 rounded-xl shadow-2xl overflow-hidden z-20 max-h-48 overflow-y-auto">
+                                                {allProfiles
+                                                    .filter(u => u.username.toLowerCase().includes(memberSearch.toLowerCase()))
+                                                    .filter(u => !participants.some(p => p.user_id === u.id))
+                                                    .slice(0, 10)
+                                                    .map(u => (
+                                                        <button
+                                                            key={u.id}
+                                                            onClick={() => addParticipant(u.id)}
+                                                            onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
+                                                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-stone-800 text-stone-300 text-sm transition-colors text-left"
+                                                        >
+                                                            <div className="w-6 h-6 rounded-full overflow-hidden border border-stone-700 flex-shrink-0">
+                                                                {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-stone-800" />}
+                                                            </div>
+                                                            {u.username}
+                                                            <Plus size={14} className="ml-auto text-gold-500" />
+                                                        </button>
+                                                    ))
+                                                }
+                                                {allProfiles.length > 0 && allProfiles.filter(u => u.username.toLowerCase().includes(memberSearch.toLowerCase()) && !participants.some(p => p.user_id === u.id)).length === 0 && (
+                                                    <div className="p-4 text-center text-stone-600 text-xs italic">No se encontraron miembros para invitar</div>
+                                                )}
+                                            </div>
                                             <p className="text-[10px] text-stone-600 mt-3 italic leading-relaxed">
                                                 Busca a un miembro para agregarlo directamente. Los participantes agregados manualmente aparecerán con estado "Aprobado".
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Admin Management - Only for existing tournaments */}
+                        {currentTournament.id && (
+                            <div className="col-span-full mt-12 pt-8 border-t border-stone-800">
+                                <h4 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                                    <Users size={20} className="text-gold-500" />
+                                    Gestión de Administradores ({admins.length})
+                                </h4>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* Admin List */}
+                                    <div className="space-y-4">
+                                        <p className="text-sm font-medium text-stone-400 mb-2 uppercase tracking-widest text-[10px]">Administradores Actuales</p>
+                                        <div className="bg-stone-950 border border-stone-800 rounded-xl overflow-hidden min-h-[100px]">
+                                            {admins.length === 0 ? (
+                                                <div className="p-8 text-center text-stone-600 italic text-sm">No hay administradores designados</div>
+                                            ) : (
+                                                <div className="divide-y divide-stone-900">
+                                                    {admins.map((a) => (
+                                                        <div key={a.id} className="flex items-center justify-between p-3 group hover:bg-stone-900/50 transition-colors">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-8 h-8 rounded-full overflow-hidden border border-stone-800 bg-stone-900">
+                                                                    {a.user?.avatar_url ? (
+                                                                        <img src={a.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <div className="w-full h-full flex items-center justify-center text-stone-700 font-bold text-xs">?</div>
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-sm font-medium text-stone-200">{a.user?.username}</span>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => removeAdmin(a.id)}
+                                                                className="opacity-0 group-hover:opacity-100 p-1.5 text-stone-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                                                                title="Eliminar administrador"
+                                                            >
+                                                                <X size={16} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Add Admin Search */}
+                                    <div className="space-y-4">
+                                        <p className="text-sm font-medium text-stone-400 mb-2 uppercase tracking-widest text-[10px]">Agregar Administrador</p>
+                                        <div className="relative group">
+                                            <input
+                                                type="text"
+                                                value={adminSearch}
+                                                onChange={e => setAdminSearch(e.target.value)}
+                                                placeholder="Buscar miembro para hacer admin..."
+                                                className="w-full bg-stone-950 border border-stone-800 rounded-lg p-3 text-white focus:border-gold-500 outline-none text-sm peer"
+                                            />
+                                            {/* Show dropdown on focus (simulated with CSS/Logic) or if having input */}
+                                            <div className="hidden peer-focus:block hover:block absolute top-full left-0 right-0 mt-2 bg-stone-900 border border-stone-800 rounded-xl shadow-2xl overflow-hidden z-20 max-h-48 overflow-y-auto">
+                                                {allProfiles
+                                                    .filter(u => u.username.toLowerCase().includes(adminSearch.toLowerCase()))
+                                                    .filter(u => !admins.some(a => a.user_id === u.id))
+                                                    .slice(0, 10)
+                                                    .map(u => (
+                                                        <button
+                                                            key={u.id}
+                                                            onClick={() => addAdmin(u.id)} // Correction here from addParticipant to addAdmin
+                                                            onMouseDown={(e) => e.preventDefault()} // Prevent blur before click
+                                                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-stone-800 text-stone-300 text-sm transition-colors text-left"
+                                                        >
+                                                            <div className="w-6 h-6 rounded-full overflow-hidden border border-stone-700 flex-shrink-0">
+                                                                {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-stone-800" />}
+                                                            </div>
+                                                            {u.username}
+                                                            <Plus size={14} className="ml-auto text-gold-500" />
+                                                        </button>
+                                                    ))
+                                                }
+                                                {allProfiles.length > 0 && allProfiles.filter(u => u.username.toLowerCase().includes(adminSearch.toLowerCase()) && !admins.some(a => a.user_id === u.id)).length === 0 && (
+                                                    <div className="p-4 text-center text-stone-600 text-xs italic">No se encontraron miembros</div>
+                                                )}
+                                            </div>
+                                            <p className="text-[10px] text-stone-600 mt-3 italic leading-relaxed">
+                                                Los administradores podrán editar el torneo y gestionar los partidos.
                                             </p>
                                         </div>
                                     </div>
@@ -533,6 +778,29 @@ export const TournamentManager: React.FC = () => {
                                         <Trophy size={20} className="text-gold-500" />
                                         Gestión de Partidos ({matches.length})
                                     </h4>
+                                </div>
+
+                                <div className="flex justify-between items-center mb-6">
+                                    <div className="flex gap-2">
+                                        {currentTournament.bracket_type === 'round_robin' && matches.length === 0 && (
+                                            <button
+                                                onClick={handleGenerateFixture}
+                                                disabled={loading}
+                                                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors font-bold shadow-lg shadow-purple-900/20"
+                                            >
+                                                <Wand2 size={16} /> Generar Fixture (Liga)
+                                            </button>
+                                        )}
+                                        {matches.length > 0 && (
+                                            <button
+                                                onClick={handleDeleteAllMatches}
+                                                disabled={loading}
+                                                className="flex items-center gap-2 px-4 py-2 bg-red-900/30 text-red-500 border border-red-900/50 hover:bg-red-900/50 rounded-lg transition-colors font-bold text-xs uppercase"
+                                            >
+                                                <Trash2 size={16} /> Borrar Todo
+                                            </button>
+                                        )}
+                                    </div>
                                     <button
                                         onClick={() => {
                                             setEditingMatch(null);
@@ -550,78 +818,24 @@ export const TournamentManager: React.FC = () => {
                                             No hay partidos registrados. Haz clic en "Agregar Partido" para crear uno.
                                         </div>
                                     ) : (
-                                        <div className="divide-y divide-stone-900">
-                                            {matches.map((match) => (
-                                                <div key={match.id} className="flex items-center justify-between p-4 group hover:bg-stone-900/50 transition-colors">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-3 mb-1">
-                                                            <span className="text-xs font-bold text-stone-600 uppercase tracking-wider">
-                                                                Ronda {match.round} - Partido {match.match_number}
-                                                            </span>
-                                                            {match.status === 'completed' && (
-                                                                <span className="px-2 py-0.5 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-[10px] font-bold uppercase tracking-wider">
-                                                                    Finalizado
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <span className={`font-bold ${match.winner_id === match.player1_id ? 'text-gold-400' : 'text-stone-300'}`}>
-                                                                {match.p1?.username || 'TBD'}
-                                                            </span>
-                                                            <span className="text-stone-600 text-xs font-black">VS</span>
-                                                            <span className={`font-bold ${match.winner_id === match.player2_id ? 'text-gold-400' : 'text-stone-300'}`}>
-                                                                {match.p2?.username || 'TBD'}
-                                                            </span>
-                                                            {match.result_score && (
-                                                                <span className="ml-3 text-gold-500 font-mono font-bold tracking-wider bg-gold-900/10 px-2 py-0.5 rounded">
-                                                                    {match.result_score}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button
-                                                            onClick={() => {
-                                                                setEditingMatch(match);
-                                                                setIsMatchModalOpen(true);
-                                                            }}
-                                                            className="p-1.5 text-stone-500 hover:text-gold-500 hover:bg-gold-500/10 rounded transition-all"
-                                                            title="Editar partido"
-                                                        >
-                                                            <Settings size={16} />
-                                                        </button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (!confirm('¿Eliminar este partido?')) return;
-                                                                const { error } = await supabase
-                                                                    .from('matches')
-                                                                    .delete()
-                                                                    .eq('id', match.id);
-                                                                if (error) {
-                                                                    console.error('Error deleting match:', error);
-                                                                    alert('Error al eliminar el partido');
-                                                                } else {
-                                                                    fetchMatches(currentTournament.id!);
-                                                                }
-                                                            }}
-                                                            className="p-1.5 text-stone-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
-                                                            title="Eliminar partido"
-                                                        >
-                                                            <X size={16} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        <MatchGridAdmin
+                                            matches={matches}
+                                            participants={participants}
+                                            onEditMatch={(match) => {
+                                                setEditingMatch(match);
+                                                setIsMatchModalOpen(true);
+                                            }}
+                                            onDeleteMatch={handleDeleteMatch}
+                                        />
                                     )}
                                 </div>
 
                                 <p className="text-[10px] text-stone-600 mt-3 italic leading-relaxed">
-                                    Aquí puedes agregar partidos pasados con sus resultados, o partidos futuros sin resultado. Los partidos se mostrarán en la página pública del torneo.
+                                    Aquí puedes agregar partidos pasados con sus resultados, subir grabaciones (recs), o programar partidos futuros.
                                 </p>
-                            </div>
+                            </div >
                         )}
-                    </div>
+                    </div >
 
                     <div className="flex justify-end gap-3 mt-8 border-t border-stone-800 pt-6">
                         <button
@@ -637,7 +851,7 @@ export const TournamentManager: React.FC = () => {
                             <Save size={18} /> Guardar Cambios
                         </button>
                     </div>
-                </div>
+                </div >
             ) : (
                 <div className="grid grid-cols-1 gap-4">
                     {tournaments.length === 0 && !loading ? (
@@ -722,6 +936,6 @@ export const TournamentManager: React.FC = () => {
                 existingMatch={editingMatch}
                 round={1}
             />
-        </div>
+        </div >
     );
 };

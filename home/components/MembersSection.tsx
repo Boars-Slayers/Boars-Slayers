@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, FC } from 'react';
 import { supabase, UserProfile } from '../lib/supabase';
 import { MemberCard } from './MemberCard';
 import { MemberModal } from './MemberModal';
 import { Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export const MembersSection: React.FC = () => {
+export const MembersSection: FC = () => {
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMember, setSelectedMember] = useState<UserProfile | null>(null);
@@ -85,7 +85,8 @@ export const MembersSection: React.FC = () => {
                   badges: m.badges,
                   avatarUrl: m.avatar_url,
                   favoriteCiv: m.favorite_civ,
-                  steamId: m.steam_id
+                  steamId: m.steam_id,
+                  aoeCompanionId: m.aoe_companion_id
                 }}
                 onClick={() => handleMemberClick(m)}
               />
@@ -105,7 +106,8 @@ export const MembersSection: React.FC = () => {
             badges: selectedMember.badges,
             avatarUrl: selectedMember.avatar_url,
             favoriteCiv: selectedMember.favorite_civ,
-            steamId: selectedMember.steam_id
+            steamId: selectedMember.steam_id,
+            aoeCompanionId: selectedMember.aoe_companion_id
           }}
           onViewProfile={() => {
             navigate(`/user/${selectedMember.username}`);
