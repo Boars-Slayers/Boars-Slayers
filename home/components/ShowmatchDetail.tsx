@@ -283,10 +283,11 @@ export const ShowmatchDetail: React.FC = () => {
                             <div className="relative z-30 transform hover:scale-110 transition-transform duration-500 animate-breathing">
                                 {/* Intense glowing VS sign */}
                                 <div className="absolute inset-0 bg-[#ffd700] blur-[100px] opacity-20 animate-pulse"></div>
-                                <div className="text-9xl md:text-[180px] font-cinzel font-black italic text-transparent bg-clip-text bg-gradient-to-b from-[#ffd700] via-[#ffaa00] to-[#b8860b] drop-shadow-[0_15px_40px_rgba(0,0,0,1)] leading-none select-none relative z-10"
-                                    style={{ WebkitTextStroke: '2.5px rgba(255, 255, 255, 0.5)' }}>
-                                    VS
-                                </div>
+                                <img
+                                    src="/vs.png"
+                                    alt="VS"
+                                    className="w-64 md:w-[450px] h-auto drop-shadow-[0_15px_40px_rgba(0,0,0,1)] relative z-10 select-none"
+                                />
                             </div>
                         </div>
 
@@ -388,24 +389,26 @@ export const ShowmatchDetail: React.FC = () => {
                                     href={match.stream_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="relative inline-flex items-center justify-center gap-4 px-14 py-5 font-cinzel font-black text-white text-base uppercase tracking-[0.3em] transition-all group overflow-hidden border-2 border-[#ffd700]/30 rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.8)]"
+                                    className="relative inline-flex items-center justify-center gap-4 px-16 py-6 transition-all group overflow-hidden hover:scale-105 active:scale-95"
                                     style={{
-                                        background: 'linear-gradient(135deg, #1b0a33 0%, #4d2c88 50%, #1b0a33 100%)',
-                                        boxShadow: '0 0 20px rgba(155, 108, 216, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.1)',
+                                        width: '420px',
+                                        height: '110px',
+                                        background: 'url("/vertransmision.png") no-repeat center center',
+                                        backgroundSize: '100% 100%',
                                     }}
                                 >
-                                    {/* Lustre Animado */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                                    {/* Lustre Animado Overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ornate-frame opacity-30"></div>
 
-                                    {/* Hover resplandor */}
-                                    <div className="absolute inset-0 bg-[#ffd700]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <div className="flex items-center gap-4 relative z-10">
+                                        <Twitch size={32} className="drop-shadow-[0_0_15px_#fff] text-white" />
+                                        <span className="font-cinzel font-black text-white text-xl uppercase tracking-[0.2em] drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">
+                                            VER TRANSMISIÓN
+                                        </span>
+                                    </div>
 
-                                    <Twitch size={28} className="drop-shadow-[0_0_10px_white]" />
-                                    <span className="relative z-10 drop-shadow-md">VER TRANSMISIÓN</span>
-
-                                    {/* Bordes dorados sutiles */}
-                                    <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-[#ffd700]/60"></div>
-                                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-[#ffd700]/60"></div>
+                                    {/* Subtle Ambient Resplandor */}
+                                    <div className="absolute inset-0 bg-purple-500/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                 </a>
                             )}
                         </div>
